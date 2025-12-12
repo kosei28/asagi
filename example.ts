@@ -65,6 +65,7 @@ const itemsRouter = createRouter([
     const items = await getItems();
     return c.json({ items });
   }),
+
   itemsApp
     .post('/')
     .use(authed)
@@ -73,6 +74,7 @@ const itemsRouter = createRouter([
       await saveItem(item, c.var.user);
       return c.json({ success: true });
     }),
+
   itemsApp.get('/:id').handle(async (c) => {
     const item = await getItem(c.params.id);
     if (!item) {
@@ -86,12 +88,14 @@ const router = createRouter([
   app.get('/status').handle(async (c) => {
     return c.json({ status: 'ok' });
   }),
+
   app
     .get('/me')
     .use(authed)
     .handle(async (c) => {
       return c.json({ user: c.var.user });
     }),
+
   itemsRouter,
 ]);
 
