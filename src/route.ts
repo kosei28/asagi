@@ -38,7 +38,7 @@ export class RouteBuilder<
     private readonly middlewares: Middleware<any, any, any>[]
   ) {}
 
-  var<AddVar extends object>(): RouteBuilder<Var & AddVar, Prefix, Method, Path, O> {
+  $var<AddVar extends object>(): RouteBuilder<Var & AddVar, Prefix, Method, Path, O> {
     return new RouteBuilder<Var & AddVar, Prefix, Method, Path, O>(
       this.prefix,
       this.path,

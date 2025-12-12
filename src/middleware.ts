@@ -17,7 +17,7 @@ export type InferMiddlewareOutput<M extends MiddlewareSource> = M extends
 export class MiddlewareBuilder<Var extends object, O extends Output> {
   constructor(private readonly middlewares: Middleware<any, any, any>[]) {}
 
-  var<AddVar extends object>(): MiddlewareBuilder<Var & AddVar, O> {
+  $var<AddVar extends object>(): MiddlewareBuilder<Var & AddVar, O> {
     return new MiddlewareBuilder<Var & AddVar, O>(this.middlewares);
   }
 

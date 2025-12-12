@@ -4,7 +4,7 @@ A type-safe web framework for TypeScript.
 
 ## Features
 
-- Type-safe context variables with `var<T>()`
+- Type-safe context variables with `$var<T>()`
 - Chainable middleware with `use()`
 - Reusable middleware with `createMiddleware()`
 - Nested routers with `basePath()` and `createRouter()`
@@ -17,7 +17,7 @@ import { createApp, createRouter } from "asagi";
 
 const app = createApp()
   .basePath("/api")
-  .var<{ user: User | null }>()
+  .$var<{ user: User | null }>()
   .use(async (c, next) => {
     c.var.user = await getUser(c.req);
     await next();
@@ -31,7 +31,7 @@ const authed = app
     }
     await next();
   })
-  .var<{ user: User }>();
+  .$var<{ user: User }>();
 
 const router = createRouter([
   app.get("/status").handle(async (c) => {

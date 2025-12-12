@@ -21,7 +21,7 @@ export class AppBuilder<Var extends object, Prefix extends string, O extends Out
     return (path) => new RouteBuilder<Var, Prefix, Method, typeof path, O>(this.prefix, path, method, this.middlewares);
   }
 
-  var<AddVar extends object>(): AppBuilder<Var & AddVar, Prefix, O> {
+  $var<AddVar extends object>(): AppBuilder<Var & AddVar, Prefix, O> {
     return new AppBuilder<Var & AddVar, Prefix, O>(this.prefix, this.middlewares);
   }
 

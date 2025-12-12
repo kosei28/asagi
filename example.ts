@@ -39,7 +39,7 @@ const app = createApp()
     await next();
     await log(c.req, c.res);
   })
-  .var<{ user: User | null }>()
+  .$var<{ user: User | null }>()
   .use(async (c, next) => {
     c.var.user = await getUser(c.req);
     await next();
@@ -53,7 +53,7 @@ const authed = app
     }
     await next();
   })
-  .var<{ user: User }>();
+  .$var<{ user: User }>();
 
 const itemsApp = app.basePath('/items').use(async (c, next) => {
   // ...
