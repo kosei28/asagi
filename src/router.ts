@@ -1,7 +1,7 @@
 import { addRoute as addRou3Route, createRouter as createRou3, findRoute } from 'rou3';
 import { Context } from './context';
 import type { BuiltRoute } from './route';
-import { defaultTransformer, TRANSFORMER_HEADER, type Transformer } from './transformer';
+import { jsonTransformer, TRANSFORMER_HEADER, type Transformer } from './transformer';
 import type { Handler, HandlerResult, Middleware, OutputType } from './types';
 
 export type RouterInstance<Routes extends BuiltRoute<any, any, any, any, any>[]> = {
@@ -101,7 +101,7 @@ const transformerFromHeader = (name: string | null, list: Transformer[]): Transf
     const found = list.find((t) => t.name === name);
     if (found) return found;
   }
-  return list[0] ?? defaultTransformer;
+  return list[0] ?? jsonTransformer;
 };
 
 export type RouterOptions = {
@@ -129,7 +129,7 @@ export function createRouter<const Routes extends RouterSource[]>(
     throw new Error('Routes are required to create a router.');
   }
 
-  const configuredTransformers = [defaultTransformer, ...(options.transformers ?? [])];
+  const configuredTransformers = [jsonTransformer, ...(options.transformers ?? [])];
 
   const flattenedRoutes = flattenRoutes(routes);
   const r3 = createRou3<BuiltRoute<any, any, any, any, any>>();

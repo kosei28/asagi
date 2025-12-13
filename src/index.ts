@@ -1,6 +1,6 @@
 export { type AppBuilder, createApp } from './app';
 
-export { type ClientOptions, createClient } from './client';
+export { type ClientFromRouter, type ClientOptions, createClient } from './client';
 
 export { Context } from './context';
 
@@ -17,7 +17,14 @@ export {
   type RouterOptions,
 } from './router';
 
-export { TRANSFORMER_HEADER, type Transformer } from './transformer';
+export {
+  createTransformer,
+  jsonTransformer,
+  TRANSFORMER_HEADER,
+  type Transformer,
+  type TransformerParsed,
+  type TransformKind,
+} from './transformer';
 
 export type {
   Handler,

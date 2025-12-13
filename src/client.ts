@@ -1,7 +1,13 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec';
 import type { BuiltRoute } from './route';
 import type { RouterInstance } from './router';
-import { defaultTransformer, TRANSFORMER_HEADER, type Transformer } from './transformer';
+import {
+  jsonTransformer,
+  TRANSFORMER_HEADER,
+  type Transformer,
+  type TransformerParsed,
+  type TransformKind,
+} from './transformer';
 import type { InputSchemas, TypedOutput } from './types';
 import type { EmptyToNever, IntRange, MergeUnion } from './utils/types';
 
@@ -30,30 +36,37 @@ type OkStatuses = IntRange<200, 300>;
 
 type IsOkStatus<S> = S extends number ? (S extends OkStatuses ? true : false) : boolean;
 
-type TypedResponse<O> =
-  O extends TypedOutput<infer Type, infer Body, infer Status>
-    ? Omit<Response, 'json' | 'text' | 'status' | 'ok'> & {
-        status: Status;
-        ok: IsOkStatus<Status>;
-        json(): Promise<Type extends 'json' ? Body : unknown>;
-        text(): Promise<Type extends 'text' ? (Body extends string ? Body : string) : string>;
-      }
-    : Response;
+type TypedResponse<O, Kind extends keyof TransformKind> = O extends TypedOutput<infer Type, infer Body, infer Status>
+  ? Omit<Response, 'json' | 'text' | 'status' | 'ok'> & {
+      status: Status;
+      ok: IsOkStatus<Status>;
+      json(): Promise<Type extends 'json' ? TransformerParsed<Kind, Body> : unknown>;
+      text(): Promise<Type extends 'text' ? (Body extends string ? Body : string) : string>;
+    }
+  : Response;
 
-type RequestFn<R extends BuiltRoute<any, any, any, any, any>> =
-  InputRequired<R> extends true
-    ? {
-        (input: EmptyToNever<InputForRoute<R>>): Promise<TypedResponse<OutputForRoute<R>>>;
-        (input: EmptyToNever<InputForRoute<R>>, requestInit: RequestInit): Promise<TypedResponse<OutputForRoute<R>>>;
-      }
-    : {
-        (): Promise<TypedResponse<OutputForRoute<R>>>;
-        (input: EmptyToNever<InputForRoute<R>>): Promise<TypedResponse<OutputForRoute<R>>>;
-        (input: EmptyToNever<InputForRoute<R>>, requestInit: RequestInit): Promise<TypedResponse<OutputForRoute<R>>>;
-      };
+type RequestFn<
+  R extends BuiltRoute<any, any, any, any, any>,
+  Kind extends keyof TransformKind,
+> = InputRequired<R> extends true
+  ? {
+      (input: EmptyToNever<InputForRoute<R>>): Promise<TypedResponse<OutputForRoute<R>, Kind>>;
+      (
+        input: EmptyToNever<InputForRoute<R>>,
+        requestInit: RequestInit
+      ): Promise<TypedResponse<OutputForRoute<R>, Kind>>;
+    }
+  : {
+      (): Promise<TypedResponse<OutputForRoute<R>, Kind>>;
+      (input: EmptyToNever<InputForRoute<R>>): Promise<TypedResponse<OutputForRoute<R>, Kind>>;
+      (
+        input: EmptyToNever<InputForRoute<R>>,
+        requestInit: RequestInit
+      ): Promise<TypedResponse<OutputForRoute<R>, Kind>>;
+    };
 
-type RouteLeaf<R extends BuiltRoute<any, any, any, any, any>> = {
-  [K in `$${Lowercase<R['method']>}`]: RequestFn<R>;
+type RouteLeaf<R extends BuiltRoute<any, any, any, any, any>, Kind extends keyof TransformKind> = {
+  [K in `$${Lowercase<R['method']>}`]: RequestFn<R, Kind>;
 };
 
 type SplitPath<P extends string> = string extends P
@@ -72,18 +85,23 @@ type PathObject<Segments extends string[], Leaf> = Segments extends []
     ? { [K in Head]: PathObject<Tail, Leaf> }
     : Record<string, Leaf>;
 
-type RouteTree<R extends BuiltRoute<any, any, any, any, any>> = PathObject<SplitPath<R['path']>, RouteLeaf<R>>;
+type RouteTree<R extends BuiltRoute<any, any, any, any, any>, Kind extends keyof TransformKind> = PathObject<
+  SplitPath<R['path']>,
+  RouteLeaf<R, Kind>
+>;
 
-type ClientFromRouter<R extends RouterInstance<any>> =
-  R extends RouterInstance<infer Routes>
-    ? MergeUnion<
-        Routes[number] extends infer Route
-          ? Route extends BuiltRoute<any, any, any, any, any>
-            ? RouteTree<Route>
-            : never
+export type ClientFromRouter<
+  R extends RouterInstance<any>,
+  Kind extends keyof TransformKind,
+> = R extends RouterInstance<infer Routes>
+  ? MergeUnion<
+      Routes[number] extends infer Route
+        ? Route extends BuiltRoute<any, any, any, any, any>
+          ? RouteTree<Route, Kind>
           : never
-      >
-    : never;
+        : never
+    >
+  : never;
 
 export type ClientOptions = {
   transformer?: Transformer;
@@ -196,11 +214,14 @@ const createNode = (state: NodeState): any => {
   return new Proxy(target, handler);
 };
 
-export const createClient = <R extends RouterInstance<any>>(
+export const createClient = <R extends RouterInstance<any>, T extends Transformer = Transformer<'json'>>(
   baseUrl: string | URL = '',
   options?: ClientOptions
-): ClientFromRouter<R> => {
+): ClientFromRouter<
+  R,
+  T extends Transformer<infer Kind> ? (Kind extends keyof TransformKind ? Kind : never) : never
+> => {
   const normalizedBase = baseUrl ? baseUrl.toString() : '';
-  const transformer = options?.transformer ?? defaultTransformer;
+  const transformer = options?.transformer ?? jsonTransformer;
   return createNode({ baseUrl: normalizedBase, segments: [], transformer });
 };
