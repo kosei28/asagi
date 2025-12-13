@@ -1,7 +1,7 @@
 import { addRoute as addRou3Route, createRouter as createRou3, findRoute } from 'rou3';
 import { Context } from './context';
 import type { BuiltRoute } from './route';
-import type { Handler, HandlerResult, Middleware } from './types';
+import type { Handler, HandlerResult, Middleware, OutputType } from './types';
 
 export type RouterInput = BuiltRoute<any, any, any, any, any> | RouterInstance<any>;
 
@@ -23,6 +23,12 @@ const flattenRoutes = (input: readonly RouterInput[]): BuiltRoute<any, any, any,
   return acc;
 };
 
+const defaultContentTypes: Record<OutputType, string | undefined> = {
+  json: 'application/json',
+  text: 'text/plain; charset=utf-8',
+  body: 'application/octet-stream',
+};
+
 const ensureResponse = (result: HandlerResult): Response => {
   if (result === undefined) {
     return new Response(null, { status: 204 });
@@ -35,6 +41,12 @@ const ensureResponse = (result: HandlerResult): Response => {
   const init: ResponseInit =
     result.status !== undefined || result.headers ? { status: result.status, headers: result.headers } : {};
   const headers = new Headers(init.headers);
+
+  const contentType = defaultContentTypes[(result as any).type as OutputType];
+  if (contentType && !headers.has('content-type')) {
+    headers.set('content-type', contentType);
+  }
+
   const responseInit: ResponseInit = { ...init, headers };
 
   let response: Response;
