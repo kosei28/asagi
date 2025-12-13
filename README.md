@@ -175,3 +175,10 @@ curl http://localhost:3000/now
 ```
 
 For a more detailed example, see [example](example/).
+
+## Inspired by
+
+- [Hono](https://github.com/honojs/hono)
+- [Elysia](https://github.com/elysiajs/elysia)
+- [tRPC](https://github.com/trpc/trpc)
+- [oRPC](https://github.com/unnoq/orpc)
