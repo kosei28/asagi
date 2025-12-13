@@ -8,9 +8,8 @@ const api = createClient<AppRouter, typeof superjsonTransformer>({
 });
 
 async function fetchStatus() {
-  const res = await api.status.$get();
-  const body = await res.json(); // { status: string, now: Date }
-  console.log('status:', body.status);
+  const res = await api.now.$get();
+  const body = await res.json(); // { now: Date }
   console.log('now:', body.now);
 }
 

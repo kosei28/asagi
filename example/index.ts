@@ -91,9 +91,8 @@ const itemsRouter = createRouter([
 ]);
 
 const appRouter = createRouter({ transformers: [superjsonTransformer] }, [
-  app.get('/status').handle(async (c) => {
+  app.get('/now').handle(async (c) => {
     return c.json({
-      status: 'ok',
       now: new Date(),
     });
   }),
