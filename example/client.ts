@@ -1,12 +1,16 @@
+import SuperJSON from 'superjson';
 import { createClient } from '../src';
 import type { AppRouter } from './index';
 
-const api = createClient<AppRouter>('http://localhost:3000');
+const api = createClient<AppRouter>('http://localhost:3000', {
+  transformer: { name: 'superjson', ...SuperJSON },
+});
 
 async function fetchStatus() {
   const res = await api.status.$get();
-  const body = await res.json(); // { status: string }
+  const body = await res.json(); // { status: string, now: Date }
   console.log('status:', body.status);
+  console.log('now:', body.now);
 }
 
 async function fetchItem(id: string) {

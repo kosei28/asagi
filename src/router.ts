@@ -1,6 +1,7 @@
 import { addRoute as addRou3Route, createRouter as createRou3, findRoute } from 'rou3';
 import { Context } from './context';
 import type { BuiltRoute } from './route';
+import { defaultTransformer, TRANSFORMER_HEADER, type Transformer } from './transformer';
 import type { Handler, HandlerResult, Middleware, OutputType } from './types';
 
 export type RouterInstance<Routes extends BuiltRoute<any, any, any, any, any>[]> = {
@@ -36,7 +37,7 @@ const defaultContentTypes: Record<OutputType, string | undefined> = {
   body: 'application/octet-stream',
 };
 
-const ensureResponse = (result: HandlerResult): Response => {
+const ensureResponse = (result: HandlerResult, transformer: Transformer): Response => {
   if (result === undefined) {
     return new Response(null, { status: 204 });
   }
@@ -49,7 +50,7 @@ const ensureResponse = (result: HandlerResult): Response => {
     result.status !== undefined || result.headers ? { status: result.status, headers: result.headers } : {};
   const headers = new Headers(init.headers);
 
-  const contentType = defaultContentTypes[(result as any).type as OutputType];
+  const contentType = defaultContentTypes[result.type];
   if (contentType && !headers.has('content-type')) {
     headers.set('content-type', contentType);
   }
@@ -58,9 +59,10 @@ const ensureResponse = (result: HandlerResult): Response => {
 
   let response: Response;
   if (result.type === 'json') {
-    response = Response.json(result.body, responseInit);
+    const body = transformer.stringify(result.body);
+    response = new Response(body, responseInit);
   } else {
-    response = new Response(result.body as any, responseInit);
+    response = new Response(result.body, responseInit);
   }
 
   return response;
@@ -68,9 +70,10 @@ const ensureResponse = (result: HandlerResult): Response => {
 
 const runChain = async (
   stack: (Middleware<any, any, any, any> | Handler<any, any, any, any>)[],
-  baseContext: { req: Request; params: any; var: any }
+  baseContext: { req: Request; params: any; var: any },
+  transformer: Transformer
 ): Promise<Response> => {
-  const context = new Context(baseContext.req, baseContext.params, baseContext.var);
+  const context = new Context(baseContext.req, baseContext.params, baseContext.var, {});
 
   const invoke = async (index: number): Promise<void> => {
     const current = stack[index];
@@ -85,7 +88,7 @@ const runChain = async (
     const result = await (current as Middleware<any, any, any, any>)(context, next);
 
     if (result !== undefined) {
-      context.res = ensureResponse(result);
+      context.res = ensureResponse(result, transformer);
     }
   };
 
@@ -93,9 +96,41 @@ const runChain = async (
   return context.res;
 };
 
-export const createRouter = <const Routes extends RouterSource[]>(
+const transformerFromHeader = (name: string | null, list: Transformer[]): Transformer => {
+  if (name) {
+    const found = list.find((t) => t.name === name);
+    if (found) return found;
+  }
+  return list[0] ?? defaultTransformer;
+};
+
+export type RouterOptions = {
+  transformers?: Transformer[];
+};
+
+export function createRouter<const Routes extends RouterSource[]>(
   routes: Routes
-): RouterInstance<FlattenRoutes<Routes>> => {
+): RouterInstance<FlattenRoutes<Routes>>;
+
+export function createRouter<const Routes extends RouterSource[]>(
+  options: RouterOptions,
+  routes: Routes
+): RouterInstance<FlattenRoutes<Routes>>;
+
+export function createRouter<const Routes extends RouterSource[]>(
+  optionsOrRoutes: RouterOptions | Routes,
+  maybeRoutes?: Routes
+): RouterInstance<FlattenRoutes<Routes>> {
+  const hasOptions = !Array.isArray(optionsOrRoutes);
+  const options = (hasOptions ? optionsOrRoutes : {}) as RouterOptions;
+  const routes = (hasOptions ? maybeRoutes : optionsOrRoutes) as Routes;
+
+  if (!routes) {
+    throw new Error('Routes are required to create a router.');
+  }
+
+  const configuredTransformers = [defaultTransformer, ...(options.transformers ?? [])];
+
   const flattenedRoutes = flattenRoutes(routes);
   const r3 = createRou3<BuiltRoute<any, any, any, any, any>>();
 
@@ -115,14 +150,19 @@ export const createRouter = <const Routes extends RouterSource[]>(
 
     const params = (match.params ?? {}) as Record<string, string>;
     const targetRoute = match.data as BuiltRoute<any, any, any, any, any>;
+    const transformer = transformerFromHeader(req.headers.get(TRANSFORMER_HEADER), configuredTransformers);
     const chain = [...targetRoute.middlewares, targetRoute.handler];
-    const result = await runChain(chain, {
-      req,
-      params,
-      var: {},
-    });
+    const result = await runChain(
+      chain,
+      {
+        req,
+        params,
+        var: {},
+      },
+      transformer
+    );
     return result;
   };
 
   return { routes: flattenedRoutes, fetch };
-};
+}

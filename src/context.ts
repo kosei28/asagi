@@ -16,7 +16,7 @@ export class Context<Var extends object, Params extends Record<string, string>, 
   res: Response;
   private _input: ParsedInput<Input>;
 
-  constructor(req: Request, params: Params, initialVar?: Var, initialInput?: Input) {
+  constructor(req: Request, params: Params, initialVar: Var, initialInput: Input) {
     this.req = req;
     this.params = params;
     this.var = initialVar ?? ({} as Var);

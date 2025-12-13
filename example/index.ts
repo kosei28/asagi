@@ -1,3 +1,4 @@
+import SuperJSON from 'superjson';
 import { z } from 'zod';
 import { createApp, createRouter } from '../src';
 
@@ -89,10 +90,11 @@ const itemsRouter = createRouter([
   }),
 ]);
 
-const appRouter = createRouter([
+const appRouter = createRouter({ transformers: [{ name: 'superjson', ...SuperJSON }] }, [
   app.get('/status').handle(async (c) => {
     return c.json({
       status: 'ok',
+      now: new Date(),
     });
   }),
 

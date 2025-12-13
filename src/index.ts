@@ -1,6 +1,6 @@
 export { type AppBuilder, createApp } from './app';
 
-export { createClient } from './client';
+export { type ClientOptions, createClient } from './client';
 
 export { Context } from './context';
 
@@ -14,7 +14,10 @@ export type {
 export {
   createRouter,
   type RouterInstance,
+  type RouterOptions,
 } from './router';
+
+export { TRANSFORMER_HEADER, type Transformer } from './transformer';
 
 export type {
   Handler,

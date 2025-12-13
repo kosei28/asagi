@@ -1,6 +1,7 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec';
 import type { BuiltRoute } from './route';
 import type { RouterInstance } from './router';
+import { defaultTransformer, TRANSFORMER_HEADER, type Transformer } from './transformer';
 import type { InputSchemas, TypedOutput } from './types';
 import type { EmptyToNever, IntRange, MergeUnion } from './utils/types';
 
@@ -84,9 +85,14 @@ type ClientFromRouter<R extends RouterInstance<any>> =
       >
     : never;
 
+export type ClientOptions = {
+  transformer?: Transformer;
+};
+
 type NodeState = {
   baseUrl: string;
   segments: string[];
+  transformer: Transformer;
 };
 
 const buildPath = (segments: string[], params: Record<string, string>): string => {
@@ -138,6 +144,7 @@ const createNode = (state: NodeState): any => {
             : `${path}${queryString}`;
 
           const headers = new Headers(requestInit?.headers ?? {});
+          headers.set(TRANSFORMER_HEADER, state.transformer.name);
 
           let body: BodyInit | undefined = requestInit?.body ?? undefined;
 
@@ -169,7 +176,15 @@ const createNode = (state: NodeState): any => {
             headers,
             body,
           });
-          return response;
+
+          const wrapped: any = Object.create(response, {
+            status: { get: () => response.status },
+            ok: { get: () => response.ok },
+            json: { value: async () => state.transformer.parse(await response.clone().text()) },
+            text: { value: () => response.text() },
+          });
+
+          return wrapped;
         };
       }
 
@@ -181,7 +196,11 @@ const createNode = (state: NodeState): any => {
   return new Proxy(target, handler);
 };
 
-export const createClient = <R extends RouterInstance<any>>(baseUrl: string | URL = ''): ClientFromRouter<R> => {
+export const createClient = <R extends RouterInstance<any>>(
+  baseUrl: string | URL = '',
+  options?: ClientOptions
+): ClientFromRouter<R> => {
   const normalizedBase = baseUrl ? baseUrl.toString() : '';
-  return createNode({ baseUrl: normalizedBase, segments: [] });
+  const transformer = options?.transformer ?? defaultTransformer;
+  return createNode({ baseUrl: normalizedBase, segments: [], transformer });
 };
