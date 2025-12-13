@@ -1,7 +1,7 @@
+import { createTransformer } from 'asagi';
 import SuperJSON from 'superjson';
-import { createTransformer } from '../src';
 
-declare module '../src' {
+declare module 'asagi' {
   interface TransformKind<Body> {
     superjson: Body;
   }

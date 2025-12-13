@@ -1,5 +1,5 @@
+import { createApp, createRouter } from 'asagi';
 import { z } from 'zod';
-import { createApp, createRouter } from '../src';
 import { superjsonTransformer } from './transformer';
 
 type User = {
