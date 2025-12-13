@@ -3,8 +3,9 @@ export { type AppBuilder, createApp } from './app';
 export { Context } from './context';
 
 export type {
+  InferMiddlewareInput,
   InferMiddlewareOutput as InferMiddlewareOutputFromInput,
-  InferMiddlewareVarFromInput,
+  InferMiddlewareVar as InferMiddlewareVarFromInput,
   MiddlewareBuilder,
   MiddlewareSource as MiddlewareInput,
 } from './middleware';
@@ -26,6 +27,8 @@ export {
 export type {
   Handler,
   HandlerResult,
+  InputFromSchemas,
+  InputSchemas,
   MaybePromise,
   Middleware,
   Next,

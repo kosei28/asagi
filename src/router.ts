@@ -3,21 +3,21 @@ import { Context } from './context';
 import type { BuiltRoute } from './route';
 import type { Handler, HandlerResult, Middleware } from './types';
 
-export type RouterInput = BuiltRoute<any, any, any> | RouterInstance<any>;
+export type RouterInput = BuiltRoute<any, any, any, any, any> | RouterInstance<any>;
 
 export type RouterInstance<T extends readonly RouterInput[]> = {
-  routes: BuiltRoute<any, any, any>[];
+  routes: BuiltRoute<any, any, any, any, any>[];
   fetch: (req: Request) => Promise<Response>;
   definitions: T;
 };
 
-const flattenRoutes = (input: readonly RouterInput[]): BuiltRoute<any, any, any>[] => {
-  const acc: BuiltRoute<any, any, any>[] = [];
+const flattenRoutes = (input: readonly RouterInput[]): BuiltRoute<any, any, any, any, any>[] => {
+  const acc: BuiltRoute<any, any, any, any, any>[] = [];
   for (const entry of input) {
     if ((entry as RouterInstance<any>).routes) {
       acc.push(...(entry as RouterInstance<any>).routes);
     } else {
-      acc.push(entry as BuiltRoute<any, any, any>);
+      acc.push(entry as BuiltRoute<any, any, any, any, any>);
     }
   }
   return acc;
@@ -48,7 +48,7 @@ const ensureResponse = (result: HandlerResult): Response => {
 };
 
 const runChain = async (
-  stack: (Middleware<any, any, any> | Handler<any, any, any>)[],
+  stack: (Middleware<any, any, any, any> | Handler<any, any, any, any>)[],
   baseContext: { req: Request; params: any; var: any }
 ): Promise<Response> => {
   const context = new Context(baseContext.req, baseContext.params, baseContext.var);
@@ -63,7 +63,7 @@ const runChain = async (
       await invoke(index + 1);
     };
 
-    const result = await (current as Middleware<any, any, any>)(context, next);
+    const result = await (current as Middleware<any, any, any, any>)(context, next);
 
     if (result !== undefined) {
       context.res = ensureResponse(result);
@@ -76,7 +76,7 @@ const runChain = async (
 
 export const createRouter = <const Defs extends readonly RouterInput[]>(definitions: Defs): RouterInstance<Defs> => {
   const routes = flattenRoutes(definitions);
-  const r3 = createRou3<BuiltRoute<any, any, any>>();
+  const r3 = createRou3<BuiltRoute<any, any, any, any, any>>();
 
   for (const route of routes) {
     addRou3Route(r3, route.method.toUpperCase(), route.path, route);
@@ -93,7 +93,7 @@ export const createRouter = <const Defs extends readonly RouterInput[]>(definiti
     }
 
     const params = (match.params ?? {}) as Record<string, string>;
-    const targetRoute = match.data as BuiltRoute<any, any, any>;
+    const targetRoute = match.data as BuiltRoute<any, any, any, any, any>;
     const chain = [...targetRoute.middlewares, targetRoute.handler];
     const result = await runChain(chain, {
       req,

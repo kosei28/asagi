@@ -1,4 +1,5 @@
-import { createApp, createRouter } from './src';
+import { z } from 'zod';
+import { createApp, createRouter } from '../src';
 
 type User = {
   id: string;
@@ -7,6 +8,10 @@ type User = {
 
 type Item = {
   id: string;
+  name: string;
+};
+
+type NewItem = {
   name: string;
 };
 
@@ -29,7 +34,7 @@ async function getItem(id: string): Promise<Item | null> {
   return { id, name: `Item ${id}` };
 }
 
-async function saveItem(item: any, user: User) {
+async function saveItem(item: NewItem, user: User) {
   // ...
 }
 
@@ -69,8 +74,9 @@ const itemsRouter = createRouter([
   itemsApp
     .post('/')
     .use(authed)
+    .input({ json: z.object({ name: z.string().min(1) }) })
     .handle(async (c) => {
-      const item = await c.req.json();
+      const item = c.input.json;
       await saveItem(item, c.var.user);
       return c.json({ success: true });
     }),

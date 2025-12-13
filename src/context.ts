@@ -9,17 +9,19 @@ type OutputBuilder<Type extends OutputType> = {
   <T extends OutputTypeMap[Type]>(body: T, init?: Omit<ResponseInit, 'status'>): TypedOutput<Type, T, 200>;
 };
 
-export class Context<Var extends object, Params extends Record<string, string>> {
+export class Context<Var extends object, Params extends Record<string, string>, Input extends object> {
   req: Request;
   params: Params;
   var: Var;
   res: Response;
+  input: Input;
 
-  constructor(req: Request, params: Params, initialVar?: Var) {
+  constructor(req: Request, params: Params, initialVar?: Var, initialInput?: Input) {
     this.req = req;
     this.params = params;
     this.var = initialVar ?? ({} as Var);
     this.res = new Response(null, { status: 204 });
+    this.input = (initialInput ?? {}) as Input;
   }
 
   private createOutputBuilder = <Type extends OutputType>(type: Type): OutputBuilder<Type> => {

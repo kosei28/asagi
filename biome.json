@@ -45,7 +45,7 @@
   },
   "overrides": [
     {
-      "includes": ["example.ts"],
+      "includes": ["example/**"],
       "linter": {
         "rules": {
           "correctness": {

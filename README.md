@@ -48,4 +48,4 @@ const router = createRouter([
 export default router;
 ```
 
-For a more detailed example, see [example.ts](example.ts).
+For a more detailed example, see [example](example/index.ts).

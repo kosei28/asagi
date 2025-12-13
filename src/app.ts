@@ -1,48 +1,54 @@
 import {
+  type InferMiddlewareInput,
   type InferMiddlewareOutput,
-  type InferMiddlewareVarFromInput,
+  type InferMiddlewareVar,
   MiddlewareBuilder,
   type MiddlewareSource,
   toMiddlewareList,
 } from './middleware';
 import { normalizePath, trimTrailingSlash } from './paths';
 import { type JoinPath, RouteBuilder, type TrimTrailingSlash } from './route';
-import type { Middleware, Output } from './types';
+import type { InputFromSchemas, InputSchemas, Middleware, Output } from './types';
+import { createInputValidator, type ValidatorOutput } from './validators';
 
-export class AppBuilder<Var extends object, Prefix extends string, O extends Output> {
+export class AppBuilder<Var extends object, Prefix extends string, Input extends object, O extends Output> {
   constructor(
     private readonly prefix: Prefix,
-    private readonly middlewares: Middleware<any, any, any>[]
+    private readonly middlewares: Middleware<any, any, any, any>[]
   ) {}
 
   private createRouteBuilder<Method extends string>(
     method: Method
-  ): <Path extends string>(path: Path) => RouteBuilder<Var, Prefix, Method, Path, O> {
-    return (path) => new RouteBuilder<Var, Prefix, Method, typeof path, O>(this.prefix, path, method, this.middlewares);
+  ): <Path extends string>(path: Path) => RouteBuilder<Var, Prefix, Method, Path, Input, O> {
+    return (path) => new RouteBuilder(this.prefix, path, method, this.middlewares);
   }
 
-  $var<AddVar extends object>(): AppBuilder<Var & AddVar, Prefix, O> {
-    return new AppBuilder<Var & AddVar, Prefix, O>(this.prefix, this.middlewares);
+  $var<AddVar extends object>(): AppBuilder<Var & AddVar, Prefix, Input, O> {
+    return new AppBuilder(this.prefix, this.middlewares);
   }
 
-  basePath<Path extends string>(path: Path): AppBuilder<Var, TrimTrailingSlash<JoinPath<Prefix, Path>>, O> {
-    return new AppBuilder<Var, TrimTrailingSlash<JoinPath<Prefix, Path>>, O>(
+  basePath<Path extends string>(path: Path): AppBuilder<Var, TrimTrailingSlash<JoinPath<Prefix, Path>>, Input, O> {
+    return new AppBuilder(
       trimTrailingSlash(normalizePath(`${this.prefix}${path}`)) as TrimTrailingSlash<JoinPath<Prefix, Path>>,
       this.middlewares
     );
   }
 
-  use<M extends MiddlewareSource = Middleware<Var, any, any>>(
+  use<M extends MiddlewareSource = Middleware<Var, any, Input, any>>(
     middleware: M
-  ): AppBuilder<Var & InferMiddlewareVarFromInput<M>, Prefix, O | InferMiddlewareOutput<M>> {
-    return new AppBuilder<Var & InferMiddlewareVarFromInput<M>, Prefix, O | InferMiddlewareOutput<M>>(this.prefix, [
-      ...this.middlewares,
-      ...toMiddlewareList(middleware),
-    ]);
+  ): AppBuilder<Var & InferMiddlewareVar<M>, Prefix, Input & InferMiddlewareInput<M>, O | InferMiddlewareOutput<M>> {
+    return new AppBuilder(this.prefix, [...this.middlewares, ...toMiddlewareList(middleware)]);
   }
 
-  createMiddleware(): MiddlewareBuilder<Var, O> {
-    return new MiddlewareBuilder<Var, O>([]);
+  createMiddleware(): MiddlewareBuilder<Var, Input, O> {
+    return new MiddlewareBuilder([]);
+  }
+
+  input<S extends Partial<InputSchemas>>(
+    schemas: S
+  ): AppBuilder<Var, Prefix, Input & InputFromSchemas<S>, O | ValidatorOutput> {
+    const validator = createInputValidator(schemas);
+    return new AppBuilder(this.prefix, [...this.middlewares, validator]);
   }
 
   all = this.createRouteBuilder('ALL');
@@ -58,6 +64,6 @@ export class AppBuilder<Var extends object, Prefix extends string, O extends Out
   }
 }
 
-export const createApp = <Var extends object = {}>(): AppBuilder<Var, '', never> => {
-  return new AppBuilder<Var, '', never>('', []);
+export const createApp = <Var extends object = {}>(): AppBuilder<Var, '', {}, never> => {
+  return new AppBuilder('', []);
 };
