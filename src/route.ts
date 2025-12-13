@@ -7,7 +7,7 @@ import {
   toMiddlewareList,
 } from './middleware';
 import { normalizePath, trimTrailingSlash } from './paths';
-import type { Handler, InputSchemas, Middleware, Output } from './types';
+import type { Handler, InputSchemas, Middleware, Output, UpdateVar } from './types';
 import { createInputValidator, type ValidatorOutput } from './validators';
 
 export type JoinPath<A extends string, B extends string> = `${A}${B}` extends `//${infer Rest}`
@@ -47,8 +47,8 @@ export class RouteBuilder<
     private readonly middlewares: Middleware<any, any, any, any>[]
   ) {}
 
-  $var<AddVar extends object>(): RouteBuilder<Var & AddVar, Prefix, Method, Path, Input, O> {
-    return new RouteBuilder<Var & AddVar, Prefix, Method, Path, Input, O>(
+  $var<NewVar extends object>(): RouteBuilder<UpdateVar<Var, NewVar>, Prefix, Method, Path, Input, O> {
+    return new RouteBuilder<UpdateVar<Var, NewVar>, Prefix, Method, Path, Input, O>(
       this.prefix,
       this.path,
       this.method,

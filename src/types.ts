@@ -38,6 +38,8 @@ export type Next = () => Promise<void>;
 
 export type HandlerResult = TypedOutput<OutputType, any> | Response | void | undefined;
 
+export type UpdateVar<Var extends object, NewVar extends object> = Omit<Var, keyof NewVar> & NewVar;
+
 export type Middleware<
   Var extends object,
   Params extends Record<string, string>,

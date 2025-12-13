@@ -36,4 +36,5 @@ export type {
   OutputTypeMap,
   ParsedInput,
   TypedOutput,
+  UpdateVar,
 } from './types';

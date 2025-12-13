@@ -8,7 +8,7 @@ import {
 } from './middleware';
 import { normalizePath, trimTrailingSlash } from './paths';
 import { type JoinPath, RouteBuilder, type TrimTrailingSlash } from './route';
-import type { InputSchemas, Middleware, Output } from './types';
+import type { InputSchemas, Middleware, Output, UpdateVar } from './types';
 import { createInputValidator, type ValidatorOutput } from './validators';
 
 export class AppBuilder<
@@ -28,7 +28,7 @@ export class AppBuilder<
     return (path) => new RouteBuilder(this.prefix, path, method, this.middlewares);
   }
 
-  $var<AddVar extends object>(): AppBuilder<Var & AddVar, Prefix, Input, O> {
+  $var<NewVar extends object>(): AppBuilder<UpdateVar<Var, NewVar>, Prefix, Input, O> {
     return new AppBuilder(this.prefix, this.middlewares);
   }
 
