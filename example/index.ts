@@ -1,17 +1,17 @@
 import { z } from 'zod';
 import { createApp, createRouter } from '../src';
 
-type User = {
+export type User = {
   id: string;
   name: string;
 };
 
-type Item = {
+export type Item = {
   id: string;
   name: string;
 };
 
-type NewItem = {
+export type NewItem = {
   name: string;
 };
 
@@ -39,7 +39,6 @@ async function saveItem(item: NewItem, user: User) {
 }
 
 const app = createApp()
-  .basePath('/api')
   .use(async (c, next) => {
     await next();
     await log(c.req, c.res);
@@ -90,9 +89,11 @@ const itemsRouter = createRouter([
   }),
 ]);
 
-const router = createRouter([
+const appRouter = createRouter([
   app.get('/status').handle(async (c) => {
-    return c.json({ status: 'ok' });
+    return c.json({
+      status: 'ok',
+    });
   }),
 
   app
@@ -105,4 +106,6 @@ const router = createRouter([
   itemsRouter,
 ]);
 
-export default router;
+export default appRouter;
+
+export type AppRouter = typeof appRouter;

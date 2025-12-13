@@ -3,24 +3,31 @@ import { Context } from './context';
 import type { BuiltRoute } from './route';
 import type { Handler, HandlerResult, Middleware, OutputType } from './types';
 
-export type RouterInput = BuiltRoute<any, any, any, any, any> | RouterInstance<any>;
-
-export type RouterInstance<T extends readonly RouterInput[]> = {
-  routes: BuiltRoute<any, any, any, any, any>[];
+export type RouterInstance<Routes extends BuiltRoute<any, any, any, any, any>[]> = {
+  routes: Routes;
   fetch: (req: Request) => Promise<Response>;
-  definitions: T;
 };
 
-const flattenRoutes = (input: readonly RouterInput[]): BuiltRoute<any, any, any, any, any>[] => {
+export type RouterSource = BuiltRoute<any, any, any, any, any> | RouterInstance<any>;
+
+export type FlattenRoutes<Routes extends RouterSource[]> = Routes extends [infer First, ...infer Rest]
+  ? First extends RouterInstance<infer R>
+    ? [...R, ...FlattenRoutes<Extract<Rest, RouterSource[]>>]
+    : First extends BuiltRoute<any, any, any, any, any>
+      ? [First, ...FlattenRoutes<Extract<Rest, RouterSource[]>>]
+      : FlattenRoutes<Extract<Rest, RouterSource[]>>
+  : [];
+
+const flattenRoutes = <Routes extends RouterSource[]>(routes: Routes): FlattenRoutes<Routes> => {
   const acc: BuiltRoute<any, any, any, any, any>[] = [];
-  for (const entry of input) {
+  for (const entry of routes) {
     if ((entry as RouterInstance<any>).routes) {
       acc.push(...(entry as RouterInstance<any>).routes);
     } else {
       acc.push(entry as BuiltRoute<any, any, any, any, any>);
     }
   }
-  return acc;
+  return acc as FlattenRoutes<Routes>;
 };
 
 const defaultContentTypes: Record<OutputType, string | undefined> = {
@@ -86,11 +93,13 @@ const runChain = async (
   return context.res;
 };
 
-export const createRouter = <const Defs extends readonly RouterInput[]>(definitions: Defs): RouterInstance<Defs> => {
-  const routes = flattenRoutes(definitions);
+export const createRouter = <const Routes extends RouterSource[]>(
+  routes: Routes
+): RouterInstance<FlattenRoutes<Routes>> => {
+  const flattenedRoutes = flattenRoutes(routes);
   const r3 = createRou3<BuiltRoute<any, any, any, any, any>>();
 
-  for (const route of routes) {
+  for (const route of flattenedRoutes) {
     addRou3Route(r3, route.method.toUpperCase(), route.path, route);
   }
 
@@ -115,5 +124,5 @@ export const createRouter = <const Defs extends readonly RouterInput[]>(definiti
     return result;
   };
 
-  return { routes, fetch, definitions } as RouterInstance<Defs>;
+  return { routes: flattenedRoutes, fetch };
 };

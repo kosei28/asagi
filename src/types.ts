@@ -1,7 +1,6 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec';
 import type { Context } from './context';
-
-export type MaybePromise<T> = T | Promise<T>;
+import type { MaybePromise } from './utils/types';
 
 export type InputSchemas = {
   json: StandardSchemaV1<any, any>;

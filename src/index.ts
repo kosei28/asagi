@@ -1,41 +1,26 @@
 export { type AppBuilder, createApp } from './app';
 
+export { createClient } from './client';
+
 export { Context } from './context';
 
-export type {
-  InferMiddlewareInput,
-  InferMiddlewareOutput,
-  InferMiddlewareParams,
-  InferMiddlewareVar,
-  MiddlewareBuilder,
-  MiddlewareSource,
-} from './middleware';
+export type { MiddlewareBuilder } from './middleware';
 
 export type {
   BuiltRoute,
-  InferHandlerOutput,
-  JoinPath,
   RouteBuilder,
-  TrimTrailingSlash,
 } from './route';
 
 export {
   createRouter,
-  type RouterInput,
   type RouterInstance,
 } from './router';
 
 export type {
   Handler,
-  HandlerResult,
   InputSchemas,
-  MaybePromise,
   Middleware,
-  Next,
-  Output,
   OutputType,
   OutputTypeMap,
-  ParsedInput,
   TypedOutput,
-  UpdateVar,
 } from './types';
