@@ -23,6 +23,24 @@ A type-safe web framework for TypeScript.
 - Input validation with [Standard Schema](https://github.com/standard-schema/standard-schema) (Zod, Valibot, ArkType, etc.)
 - Custom transformers (Superjson, etc.)
 
+## Installation
+
+```bash
+npm install asagi
+```
+
+```bash
+pnpm add asagi
+```
+
+```bash
+bun add asagi
+```
+
+```bash
+yarn add asagi
+```
+
 ## Example
 
 ### Server
