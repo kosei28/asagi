@@ -1,3 +1,4 @@
+import type { InferRouteParams } from 'rou3';
 import {
   type InferMiddlewareInput,
   type InferMiddlewareOutput,
@@ -39,13 +40,13 @@ export class AppBuilder<
     );
   }
 
-  use<M extends MiddlewareSource = Middleware<Var, any, Input, any>>(
+  use<M extends MiddlewareSource = Middleware<Var, InferRouteParams<Prefix>, Input, any>>(
     middleware: M
   ): AppBuilder<Var & InferMiddlewareVar<M>, Prefix, Input & InferMiddlewareInput<M>, O | InferMiddlewareOutput<M>> {
     return new AppBuilder(this.prefix, [...this.middlewares, ...toMiddlewareList(middleware)]);
   }
 
-  createMiddleware(): MiddlewareBuilder<Var, Input, O> {
+  createMiddleware(): MiddlewareBuilder<Var, InferRouteParams<Prefix>, Input, O> {
     return new MiddlewareBuilder([]);
   }
 

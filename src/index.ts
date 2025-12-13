@@ -5,6 +5,7 @@ export { Context } from './context';
 export type {
   InferMiddlewareInput,
   InferMiddlewareOutput,
+  InferMiddlewareParams,
   InferMiddlewareVar,
   MiddlewareBuilder,
   MiddlewareSource,
