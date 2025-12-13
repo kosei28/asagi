@@ -7,9 +7,9 @@ import {
   type MiddlewareSource,
   toMiddlewareList,
 } from './middleware';
-import { normalizePath, trimTrailingSlash } from './paths';
 import { type JoinPath, RouteBuilder, type TrimTrailingSlash } from './route';
 import type { InputSchemas, Middleware, Output, UpdateVar } from './types';
+import { normalizePath, trimTrailingSlash } from './utils/paths';
 import { createInputValidator, type ValidatorOutput } from './validators';
 
 export class AppBuilder<
@@ -22,12 +22,6 @@ export class AppBuilder<
     private readonly prefix: Prefix,
     private readonly middlewares: Middleware<any, any, any, any>[]
   ) {}
-
-  private createRouteBuilder<Method extends string>(
-    method: Method
-  ): <Path extends string>(path: Path) => RouteBuilder<Var, Prefix, Method, Path, Input, O> {
-    return (path) => new RouteBuilder(this.prefix, path, method, this.middlewares);
-  }
 
   $var<NewVar extends object>(): AppBuilder<UpdateVar<Var, NewVar>, Prefix, Input, O> {
     return new AppBuilder(this.prefix, this.middlewares);
@@ -53,6 +47,12 @@ export class AppBuilder<
   input<S extends Partial<InputSchemas>>(schemas: S): AppBuilder<Var, Prefix, Input & S, O | ValidatorOutput> {
     const validator = createInputValidator(schemas);
     return new AppBuilder(this.prefix, [...this.middlewares, validator]);
+  }
+
+  private createRouteBuilder<Method extends string>(
+    method: Method
+  ): <Path extends string>(path: Path) => RouteBuilder<Var, Prefix, Method, Path, Input, O> {
+    return (path) => new RouteBuilder(this.prefix, path, method, this.middlewares);
   }
 
   all = this.createRouteBuilder('ALL');

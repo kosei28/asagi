@@ -1,12 +1,12 @@
 import { createClient } from '../src';
-import type { AppRouter, Item } from './index';
+import type { AppRouter } from './index';
 
 const api = createClient<AppRouter>('http://localhost:3000');
 
 async function fetchStatus() {
   const res = await api.status.$get();
-  const body: { status: string } = await res.json();
-  console.log('status', body.status);
+  const body = await res.json(); // { status: string }
+  console.log('status:', body.status);
 }
 
 async function fetchItem(id: string) {
@@ -14,8 +14,8 @@ async function fetchItem(id: string) {
     params: { id },
   });
   if (res.ok) {
-    const body: { item: Item } = await res.json();
-    console.log('item', body);
+    const body = await res.json(); // { item: Item }
+    console.log('item:', body.item);
   }
 }
 
@@ -24,8 +24,8 @@ async function createItem(name: string) {
     json: { name },
   });
   if (res.ok) {
-    const body: { success: boolean } = await res.json();
-    console.log('create item success', body.success);
+    const body = await res.json(); // { success: boolean }
+    console.log('create item success:', body.success);
   }
 }
 

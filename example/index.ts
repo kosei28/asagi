@@ -1,17 +1,17 @@
 import { z } from 'zod';
 import { createApp, createRouter } from '../src';
 
-export type User = {
+type User = {
   id: string;
   name: string;
 };
 
-export type Item = {
+type Item = {
   id: string;
   name: string;
 };
 
-export type NewItem = {
+type NewItem = {
   name: string;
 };
 

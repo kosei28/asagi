@@ -6,8 +6,8 @@ import {
   type MiddlewareSource,
   toMiddlewareList,
 } from './middleware';
-import { normalizePath, trimTrailingSlash } from './paths';
 import type { Handler, InputSchemas, Middleware, Output, UpdateVar } from './types';
+import { normalizePath, trimTrailingSlash } from './utils/paths';
 import { createInputValidator, type ValidatorOutput } from './validators';
 
 export type JoinPath<A extends string, B extends string> = `${A}${B}` extends `//${infer Rest}`

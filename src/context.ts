@@ -10,18 +10,22 @@ type OutputBuilder<Type extends OutputType> = {
 };
 
 export class Context<Var extends object, Params extends Record<string, string>, Input extends Partial<InputSchemas>> {
-  req: Request;
-  params: Params;
+  readonly req: Request;
+  readonly params: Params;
   var: Var;
   res: Response;
-  input: ParsedInput<Input>;
+  private _input: ParsedInput<Input>;
 
   constructor(req: Request, params: Params, initialVar?: Var, initialInput?: Input) {
     this.req = req;
     this.params = params;
     this.var = initialVar ?? ({} as Var);
     this.res = new Response(null, { status: 204 });
-    this.input = (initialInput ?? {}) as ParsedInput<Input>;
+    this._input = (initialInput ?? {}) as ParsedInput<Input>;
+  }
+
+  get input(): ParsedInput<Input> {
+    return this._input;
   }
 
   private createOutputBuilder = <Type extends OutputType>(type: Type): OutputBuilder<Type> => {

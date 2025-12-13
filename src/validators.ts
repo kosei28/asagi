@@ -100,10 +100,10 @@ export const createInputValidator = <S extends Partial<InputSchemas>>(
       );
     }
 
-    c.input = {
-      ...(c.input as any),
+    (c as any)._input = {
+      ...c.input,
       ...collected,
-    } as any;
+    };
 
     await next();
   };
