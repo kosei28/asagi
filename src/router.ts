@@ -9,15 +9,16 @@ export type RouterInstance<Routes extends BuiltRoute<any, any, any, any, any>[]>
   fetch: (req: Request) => Promise<Response>;
 };
 
-export type RouterSource = BuiltRoute<any, any, any, any, any> | RouterInstance<any>;
+type RouterSource = BuiltRoute<any, any, any, any, any> | RouterInstance<any>;
 
-export type FlattenRoutes<Routes extends RouterSource[]> = Routes extends [infer First, ...infer Rest]
-  ? First extends RouterInstance<infer R>
-    ? [...R, ...FlattenRoutes<Extract<Rest, RouterSource[]>>]
-    : First extends BuiltRoute<any, any, any, any, any>
-      ? [First, ...FlattenRoutes<Extract<Rest, RouterSource[]>>]
-      : FlattenRoutes<Extract<Rest, RouterSource[]>>
-  : [];
+type ExtractRoute<R extends RouterSource> =
+  R extends RouterInstance<infer SubRoutes>
+    ? SubRoutes[number]
+    : R extends BuiltRoute<any, any, any, any, any>
+      ? R
+      : never;
+
+type FlattenRoutes<Routes extends RouterSource[]> = ExtractRoute<Routes[number]>[];
 
 const flattenRoutes = <Routes extends RouterSource[]>(routes: Routes): FlattenRoutes<Routes> => {
   const acc: BuiltRoute<any, any, any, any, any>[] = [];
