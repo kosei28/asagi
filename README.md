@@ -4,19 +4,34 @@ A type-safe web framework for TypeScript.
 
 ## Features
 
+**Type Safety**
+
+- Type-safe RPC client
+- Fully typed middleware — response types from middleware and validators are properly inferred
 - Type-safe context variables with `$var<T>()`
+- Honest TypeScript internals — no fake properties, no type lies
+
+**Routing & Middleware**
+
 - Chainable middleware with `use()`
 - Reusable middleware with `createMiddleware()`
+- All middleware is per-route — no wasted middleware calls when the route doesn't match
 - Nested routers with `basePath()` and `createRouter()`
-- Path parameters support (e.g., `/items/:id`)
+
+**Validation & Serialization**
+
+- Input validation with [Standard Schema](https://github.com/standard-schema/standard-schema) (Zod, Valibot, ArkType, etc.)
+- Custom transformers (Superjson, etc.)
 
 ## Example
 
+### Server
+
 ```ts
+import { z } from "zod";
 import { createApp, createRouter } from "asagi";
 
 const app = createApp()
-  .basePath("/api")
   .$var<{ user: User | null }>()
   .use(async (c, next) => {
     c.var.user = await getUser(c.req);
@@ -33,19 +48,130 @@ const authed = app
   })
   .$var<{ user: User }>();
 
-const router = createRouter([
-  app.get("/status").handle(async (c) => {
-    return c.json({ status: "ok" });
+const itemsApp = app.basePath("/items");
+
+const itemsRouter = createRouter([
+  itemsApp.get("/").handle(async (c) => {
+    const items = await getItems();
+    return c.json({ items });
   }),
+
+  itemsApp
+    .post("/")
+    .use(authed)
+    .input({ json: z.object({ name: z.string().min(1) }) })
+    .handle(async (c) => {
+      const item = c.input.json;
+      await saveItem(item, c.var.user);
+      return c.json({ success: true });
+    }),
+
+  itemsApp.get("/:id").handle(async (c) => {
+    const item = await getItem(c.params.id);
+    if (!item) {
+      return c.json({ error: "Not Found" }, 404);
+    }
+    return c.json({ item });
+  }),
+]);
+
+const appRouter = createRouter([
   app
     .get("/me")
     .use(authed)
     .handle(async (c) => {
       return c.json({ user: c.var.user });
     }),
+
+  itemsRouter,
 ]);
 
-export default router;
+export default appRouter;
+
+export type AppRouter = typeof appRouter;
 ```
 
-For a more detailed example, see [example](example/index.ts).
+### Client
+
+```ts
+import { createClient } from "asagi";
+import type { AppRouter } from "./server";
+
+const api = createClient<AppRouter>({
+  baseUrl: "http://localhost:3000",
+});
+
+// GET /items/:id
+const res = await api.items[":id"].$get({
+  params: { id: "item123" },
+});
+if (res.ok) {
+  const body = await res.json(); // { item: Item }
+  console.log(body.item);
+}
+
+// POST /items
+const res = await api.items.$post({
+  json: { name: "New Item" },
+});
+if (res.ok) {
+  const body = await res.json(); // { success: boolean }
+  console.log(body.success);
+}
+```
+
+### Custom Transformer (Superjson)
+
+You can use custom transformers like Superjson to serialize complex types (Date, Map, Set, etc.).
+
+The server can register multiple transformers and automatically selects the appropriate one based on the client's request. This allows JavaScript clients to use Superjson for rich type support, while other clients (e.g., mobile apps, curl) can use standard JSON.
+
+```ts
+import SuperJSON from "superjson";
+import { createTransformer } from "asagi";
+
+declare module "asagi" {
+  interface TransformKind<Body> {
+    superjson: Body;
+  }
+}
+
+export const superjsonTransformer = createTransformer({
+  name: "superjson",
+  stringify: SuperJSON.stringify,
+  parse: SuperJSON.parse,
+});
+```
+
+Server (register multiple transformers):
+
+```ts
+const appRouter = createRouter({ transformers: [superjsonTransformer] }, [
+  app.get("/now").handle(async (c) => {
+    return c.json({ now: new Date() });
+  }),
+]);
+```
+
+JavaScript client (using Superjson):
+
+```ts
+const api = createClient<AppRouter, typeof superjsonTransformer>({
+  baseUrl: "http://localhost:3000",
+  transformer: superjsonTransformer,
+});
+
+const res = await api.now.$get();
+const body = await res.json();
+console.log(body.now); // Date object (deserialized by Superjson)
+```
+
+Other clients (using standard JSON):
+
+```bash
+# curl or other HTTP clients receive standard JSON
+curl http://localhost:3000/now
+# => {"now":"2025-01-01T00:00:00.000Z"}
+```
+
+For a more detailed example, see [example](example/).
