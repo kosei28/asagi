@@ -1,5 +1,5 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec';
-import type { InputFromSchemas, InputSchemas, Middleware, TypedOutput } from './types';
+import type { InputSchemas, Middleware, ParsedInput, TypedOutput } from './types';
 
 const parseJsonBody = async (req: Request): Promise<unknown> => {
   const clone = req.clone();
@@ -57,9 +57,9 @@ export type ValidatorOutput = TypedOutput<'json', { error: string; issues: Stand
 
 export const createInputValidator = <S extends Partial<InputSchemas>>(
   schemas: S
-): Middleware<any, any, InputFromSchemas<S>, ValidatorOutput | undefined> => {
+): Middleware<any, any, S, ValidatorOutput | undefined> => {
   return async (c, next) => {
-    const collected: Partial<InputFromSchemas<S>> = {};
+    const collected: Partial<ParsedInput<S>> = {};
     const issues: StandardSchemaV1.Issue[] = [];
 
     const tryValidate = async <K extends keyof S>(key: K, value: unknown) => {

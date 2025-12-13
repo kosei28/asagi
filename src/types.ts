@@ -6,16 +6,13 @@ export type MaybePromise<T> = T | Promise<T>;
 export type InputSchemas = {
   json: StandardSchemaV1<any, any>;
   form: StandardSchemaV1<any, any>;
-  query: StandardSchemaV1<any, any>;
-  params: StandardSchemaV1<any, any>;
+  query: StandardSchemaV1<Record<string, string>, any>;
+  params: StandardSchemaV1<Record<string, string>, any>;
 };
 
-export type InputFromSchemas<S extends Partial<InputSchemas>> = {
-  [K in keyof S as S[K] extends StandardSchemaV1<any, any> ? K : never]: S[K] extends StandardSchemaV1<
-    any,
-    infer Output
-  >
-    ? Output
+export type ParsedInput<S extends Partial<InputSchemas>> = {
+  [K in keyof S as S[K] extends StandardSchemaV1<any, any> ? K : never]: S[K] extends StandardSchemaV1<any, infer O>
+    ? O
     : never;
 };
 
@@ -44,13 +41,13 @@ export type HandlerResult = TypedOutput<OutputType, any> | Response | void | und
 export type Middleware<
   Var extends object,
   Params extends Record<string, string>,
-  Input extends object,
+  Input extends Partial<InputSchemas>,
   Result extends HandlerResult,
 > = (context: Context<Var, Params, Input>, next: Next) => MaybePromise<Result>;
 
 export type Handler<
   Var extends object,
   Params extends Record<string, string>,
-  Input extends object,
+  Input extends Partial<InputSchemas>,
   Result extends HandlerResult,
 > = (context: Context<Var, Params, Input>) => MaybePromise<Result>;

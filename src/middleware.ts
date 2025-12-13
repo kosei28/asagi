@@ -1,27 +1,22 @@
-import type { InputFromSchemas, InputSchemas, Middleware, Output } from './types';
+import type { InputSchemas, Middleware, Output } from './types';
 import { createInputValidator, type ValidatorOutput } from './validators';
 
 export type MiddlewareSource = Middleware<any, any, any, any> | MiddlewareBuilder<any, any, any>;
 
-export type InferMiddlewareVar<M extends MiddlewareSource> = M extends
-  | MiddlewareBuilder<infer V, any, any>
-  | Middleware<infer V, any, any, any>
-  ? V
-  : never;
+export type InferMiddlewareVar<M extends MiddlewareSource> =
+  M extends MiddlewareBuilder<infer V1, any, any> ? V1 : M extends Middleware<infer V2, any, any, any> ? V2 : never;
 
-export type InferMiddlewareInput<M extends MiddlewareSource> = M extends
-  | MiddlewareBuilder<any, infer I, any>
-  | Middleware<any, any, infer I, any>
-  ? I
-  : {};
+export type InferMiddlewareInput<M extends MiddlewareSource> =
+  M extends MiddlewareBuilder<any, infer I1, any> ? I1 : M extends Middleware<any, any, infer I2, any> ? I2 : {};
 
-export type InferMiddlewareOutput<M extends MiddlewareSource> = M extends
-  | MiddlewareBuilder<any, any, infer O>
-  | Middleware<any, any, any, infer O>
-  ? Exclude<O, void | undefined>
-  : never;
+export type InferMiddlewareOutput<M extends MiddlewareSource> =
+  M extends MiddlewareBuilder<any, any, infer O1>
+    ? Exclude<O1, void | undefined>
+    : M extends Middleware<any, any, any, infer O2>
+      ? Exclude<O2, void | undefined>
+      : never;
 
-export class MiddlewareBuilder<Var extends object, Input extends object, O extends Output> {
+export class MiddlewareBuilder<Var extends object, Input extends Partial<InputSchemas>, O extends Output> {
   constructor(private readonly middlewares: Middleware<any, any, any, any>[]) {}
 
   $var<AddVar extends object>(): MiddlewareBuilder<Var & AddVar, Input, O> {
@@ -34,9 +29,7 @@ export class MiddlewareBuilder<Var extends object, Input extends object, O exten
     return new MiddlewareBuilder([...this.middlewares, ...toMiddlewareList(middleware)]);
   }
 
-  input<S extends Partial<InputSchemas>>(
-    schemas: S
-  ): MiddlewareBuilder<Var, Input & InputFromSchemas<S>, O | ValidatorOutput> {
+  input<S extends Partial<InputSchemas>>(schemas: S): MiddlewareBuilder<Var, Input & S, O | ValidatorOutput> {
     const validator = createInputValidator(schemas);
     return new MiddlewareBuilder([...this.middlewares, validator]);
   }

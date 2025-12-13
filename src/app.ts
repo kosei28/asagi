@@ -8,10 +8,15 @@ import {
 } from './middleware';
 import { normalizePath, trimTrailingSlash } from './paths';
 import { type JoinPath, RouteBuilder, type TrimTrailingSlash } from './route';
-import type { InputFromSchemas, InputSchemas, Middleware, Output } from './types';
+import type { InputSchemas, Middleware, Output } from './types';
 import { createInputValidator, type ValidatorOutput } from './validators';
 
-export class AppBuilder<Var extends object, Prefix extends string, Input extends object, O extends Output> {
+export class AppBuilder<
+  Var extends object,
+  Prefix extends string,
+  Input extends Partial<InputSchemas>,
+  O extends Output,
+> {
   constructor(
     private readonly prefix: Prefix,
     private readonly middlewares: Middleware<any, any, any, any>[]
@@ -44,9 +49,7 @@ export class AppBuilder<Var extends object, Prefix extends string, Input extends
     return new MiddlewareBuilder([]);
   }
 
-  input<S extends Partial<InputSchemas>>(
-    schemas: S
-  ): AppBuilder<Var, Prefix, Input & InputFromSchemas<S>, O | ValidatorOutput> {
+  input<S extends Partial<InputSchemas>>(schemas: S): AppBuilder<Var, Prefix, Input & S, O | ValidatorOutput> {
     const validator = createInputValidator(schemas);
     return new AppBuilder(this.prefix, [...this.middlewares, validator]);
   }

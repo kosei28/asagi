@@ -4,10 +4,10 @@ export { Context } from './context';
 
 export type {
   InferMiddlewareInput,
-  InferMiddlewareOutput as InferMiddlewareOutputFromInput,
-  InferMiddlewareVar as InferMiddlewareVarFromInput,
+  InferMiddlewareOutput,
+  InferMiddlewareVar,
   MiddlewareBuilder,
-  MiddlewareSource as MiddlewareInput,
+  MiddlewareSource,
 } from './middleware';
 
 export type {
@@ -27,7 +27,6 @@ export {
 export type {
   Handler,
   HandlerResult,
-  InputFromSchemas,
   InputSchemas,
   MaybePromise,
   Middleware,
@@ -35,5 +34,6 @@ export type {
   Output,
   OutputType,
   OutputTypeMap,
+  ParsedInput,
   TypedOutput,
 } from './types';

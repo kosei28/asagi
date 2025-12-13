@@ -20,7 +20,6 @@
       "recommended": true,
       "suspicious": {
         "noExplicitAny": "off",
-        "noRedeclare": "off",
         "noConfusingVoidType": "off"
       },
       "complexity": {

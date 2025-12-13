@@ -1,4 +1,4 @@
-import type { OutputType, OutputTypeMap, TypedOutput } from './types';
+import type { InputSchemas, OutputType, OutputTypeMap, ParsedInput, TypedOutput } from './types';
 
 type OutputBuilder<Type extends OutputType> = {
   <T extends OutputTypeMap[Type], S extends number>(body: T, init: S): TypedOutput<Type, T, S>;
@@ -9,19 +9,19 @@ type OutputBuilder<Type extends OutputType> = {
   <T extends OutputTypeMap[Type]>(body: T, init?: Omit<ResponseInit, 'status'>): TypedOutput<Type, T, 200>;
 };
 
-export class Context<Var extends object, Params extends Record<string, string>, Input extends object> {
+export class Context<Var extends object, Params extends Record<string, string>, Input extends Partial<InputSchemas>> {
   req: Request;
   params: Params;
   var: Var;
   res: Response;
-  input: Input;
+  input: ParsedInput<Input>;
 
   constructor(req: Request, params: Params, initialVar?: Var, initialInput?: Input) {
     this.req = req;
     this.params = params;
     this.var = initialVar ?? ({} as Var);
     this.res = new Response(null, { status: 204 });
-    this.input = (initialInput ?? {}) as Input;
+    this.input = (initialInput ?? {}) as ParsedInput<Input>;
   }
 
   private createOutputBuilder = <Type extends OutputType>(type: Type): OutputBuilder<Type> => {
