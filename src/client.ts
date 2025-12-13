@@ -104,13 +104,16 @@ export type ClientFromRouter<
   : never;
 
 export type ClientOptions = {
+  baseUrl?: string | URL;
   transformer?: Transformer;
+  fetch?: typeof fetch;
 };
 
 type NodeState = {
   baseUrl: string;
   segments: string[];
   transformer: Transformer;
+  fetch: typeof fetch;
 };
 
 const buildPath = (segments: string[], params: Record<string, string>): string => {
@@ -188,7 +191,7 @@ const createNode = (state: NodeState): any => {
 
           const finalMethod = method === 'ALL' ? (requestInit?.method ?? 'GET') : method;
 
-          const response = await fetch(urlString, {
+          const response = await state.fetch(urlString, {
             ...requestInit,
             method: finalMethod,
             headers,
@@ -215,13 +218,13 @@ const createNode = (state: NodeState): any => {
 };
 
 export const createClient = <R extends RouterInstance<any>, T extends Transformer = Transformer<'json'>>(
-  baseUrl: string | URL = '',
-  options?: ClientOptions
+  options: ClientOptions = {}
 ): ClientFromRouter<
   R,
   T extends Transformer<infer Kind> ? (Kind extends keyof TransformKind ? Kind : never) : never
 > => {
-  const normalizedBase = baseUrl ? baseUrl.toString() : '';
-  const transformer = options?.transformer ?? jsonTransformer;
-  return createNode({ baseUrl: normalizedBase, segments: [], transformer });
+  const normalizedBase = options.baseUrl ? options.baseUrl.toString() : '';
+  const transformer = options.transformer ?? jsonTransformer;
+  const fetchImpl = options.fetch ?? globalThis.fetch;
+  return createNode({ baseUrl: normalizedBase, segments: [], transformer, fetch: fetchImpl });
 };

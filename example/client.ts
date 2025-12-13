@@ -2,7 +2,8 @@ import { createClient } from '../src';
 import type { AppRouter } from './index';
 import { superjsonTransformer } from './transformer';
 
-const api = createClient<AppRouter, typeof superjsonTransformer>('http://localhost:3000', {
+const api = createClient<AppRouter, typeof superjsonTransformer>({
+  baseUrl: 'http://localhost:3000',
   transformer: superjsonTransformer,
 });
 
