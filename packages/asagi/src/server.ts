@@ -60,15 +60,15 @@ export type Server = {
   fetch: (req: Request) => Promise<Response>;
 };
 
-type InferInitVar<R> = R extends BuiltRoute<infer InitVar, any, any, any, any, any>[] ? InitVar : never;
+type InferInitVar<R> = R extends BuiltRoute<infer InitVar, any, any, any, any, any> ? InitVar : never;
 
 type ServerOptionsArg<InitVar extends object> = keyof InitVar extends never
   ? [options?: ServerOptions<InitVar>]
   : [options: ServerOptions<InitVar>];
 
-export function createServer<Routes extends BuiltRoute<any, any, any, any, any, any>[]>(
-  routes: Routes,
-  ...args: ServerOptionsArg<InferInitVar<Routes>>
+export function createServer<R extends BuiltRoute<any, any, any, any, any, any>>(
+  routes: R[],
+  ...args: ServerOptionsArg<InferInitVar<R>>
 ): Server {
   const options = args[0];
   const configuredTransformers = [jsonTransformer, ...(options?.transformers ?? [])];

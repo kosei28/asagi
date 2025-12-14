@@ -8,9 +8,9 @@ type ExtractRoute<R extends RouterSource> = R extends BuiltRoute<any, any, any, 
     ? R
     : never;
 
-type FlattenRoutes<Routes extends RouterSource[]> = ExtractRoute<Routes[number]>[];
+type FlattenRoutes<R extends RouterSource> = ExtractRoute<R>;
 
-const flattenRoutes = <Routes extends RouterSource[]>(routes: Routes): FlattenRoutes<Routes> => {
+const flattenRoutes = <R extends RouterSource>(routes: R[]): FlattenRoutes<R>[] => {
   const acc: BuiltRoute<any, any, any, any, any, any>[] = [];
   for (const entry of routes) {
     if (Array.isArray(entry)) {
@@ -19,9 +19,9 @@ const flattenRoutes = <Routes extends RouterSource[]>(routes: Routes): FlattenRo
       acc.push(entry);
     }
   }
-  return acc as FlattenRoutes<Routes>;
+  return acc as FlattenRoutes<R>[];
 };
 
-export function createRouter<const Routes extends RouterSource[]>(routes: Routes): FlattenRoutes<Routes> {
+export function createRouter<R extends RouterSource>(routes: R[]): FlattenRoutes<R>[] {
   return flattenRoutes(routes);
 }

@@ -93,15 +93,9 @@ export type RouteTree<R extends BuiltRoute<any, any, any, any, any, any>, Leaf> 
 >;
 
 export type ClientFromRouter<
-  Routes extends BuiltRoute<any, any, any, any, any, any>[],
+  R extends BuiltRoute<any, any, any, any, any, any>,
   Kind extends keyof TransformKind,
-> = MergeUnion<
-  Routes[number] extends infer Route
-    ? Route extends BuiltRoute<any, any, any, any, any, any>
-      ? RouteTree<Route, RequestFn<Route, Kind>>
-      : never
-    : never
->;
+> = MergeUnion<R extends any ? RouteTree<R, RequestFn<R, Kind>> : never>;
 
 export type ClientOptions = {
   baseUrl?: string | URL;
@@ -189,7 +183,7 @@ export const createClient = <
 >(
   options: ClientOptions = {}
 ): ClientFromRouter<
-  Routes,
+  Routes[number],
   T extends Transformer<infer Kind> ? (Kind extends keyof TransformKind ? Kind : never) : never
 > => {
   return createNode({
