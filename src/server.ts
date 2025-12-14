@@ -78,6 +78,7 @@ const transformerFromHeader = (name: string | null, list: Transformer[]): Transf
 };
 
 export type ServerOptions<InitVar extends object> = {
+  basePath?: string;
   transformers?: Transformer[];
 } & (keyof InitVar extends never ? { var?: Record<string, never> } : { var: InitVar });
 
@@ -104,18 +105,27 @@ export function createServer<Routes extends BuiltRoute<any, any, any, any, any, 
     addRou3Route(r3, route.method.toUpperCase(), route.path, route);
   }
 
+  const basePath = options?.basePath ?? '';
+
   const fetch = async (req: Request): Promise<Response> => {
     const url = new URL(req.url);
+    let pathname = url.pathname;
+
+    if (basePath && pathname.startsWith(basePath)) {
+      pathname = pathname.slice(basePath.length) || '/';
+    } else if (basePath) {
+      return new Response('Not Found', { status: 404 });
+    }
+
     const match =
-      (findRoute(r3, req.method, url.pathname, { params: true }) as any) ??
-      (findRoute(r3, 'ALL', url.pathname, { params: true }) as any);
+      findRoute(r3, req.method, pathname, { params: true }) ?? findRoute(r3, 'ALL', pathname, { params: true });
 
     if (!match) {
       return new Response('Not Found', { status: 404 });
     }
 
-    const params = (match.params ?? {}) as Record<string, string>;
-    const targetRoute = match.data as BuiltRoute<any, any, any, any, any, any>;
+    const params = match.params ?? {};
+    const targetRoute = match.data;
     const transformer = transformerFromHeader(req.headers.get(TRANSFORMER_HEADER), configuredTransformers);
     const chain = [...targetRoute.middlewares, targetRoute.handler];
     const result = await runChain(
@@ -123,7 +133,7 @@ export function createServer<Routes extends BuiltRoute<any, any, any, any, any, 
       {
         req,
         params,
-        var: options?.var ?? ({} as InferInitVar<Routes>),
+        var: options?.var ?? {},
       },
       transformer
     );
