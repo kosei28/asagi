@@ -1,6 +1,5 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec';
 import type { BuiltRoute } from './route';
-import type { RouterInstance } from './router';
 import {
   jsonTransformer,
   TRANSFORMER_HEADER,
@@ -91,17 +90,15 @@ type RouteTree<R extends BuiltRoute<any, any, any, any, any>, Kind extends keyof
 >;
 
 export type ClientFromRouter<
-  R extends RouterInstance<any>,
+  Routes extends BuiltRoute<any, any, any, any, any>[],
   Kind extends keyof TransformKind,
-> = R extends RouterInstance<infer Routes>
-  ? MergeUnion<
-      Routes[number] extends infer Route
-        ? Route extends BuiltRoute<any, any, any, any, any>
-          ? RouteTree<Route, Kind>
-          : never
-        : never
-    >
-  : never;
+> = MergeUnion<
+  Routes[number] extends infer Route
+    ? Route extends BuiltRoute<any, any, any, any, any>
+      ? RouteTree<Route, Kind>
+      : never
+    : never
+>;
 
 export type ClientOptions = {
   baseUrl?: string | URL;
@@ -217,10 +214,13 @@ const createNode = (state: NodeState): any => {
   return new Proxy(target, handler);
 };
 
-export const createClient = <R extends RouterInstance<any>, T extends Transformer = Transformer<'json'>>(
+export const createClient = <
+  Routes extends BuiltRoute<any, any, any, any, any>[],
+  T extends Transformer = Transformer<'json'>,
+>(
   options: ClientOptions = {}
 ): ClientFromRouter<
-  R,
+  Routes,
   T extends Transformer<infer Kind> ? (Kind extends keyof TransformKind ? Kind : never) : never
 > => {
   const normalizedBase = options.baseUrl ? options.baseUrl.toString() : '';

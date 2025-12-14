@@ -47,7 +47,7 @@ yarn add asagi
 
 ```ts
 import { z } from "zod";
-import { createApp, createRouter } from "asagi";
+import { createApp, createRouter, createServer } from "asagi";
 
 const app = createApp()
   .$var<{ user: User | null }>()
@@ -104,9 +104,9 @@ const appRouter = createRouter([
   itemsRouter,
 ]);
 
-export default appRouter;
-
 export type AppRouter = typeof appRouter;
+
+export default createServer(appRouter);
 ```
 
 ### Client
@@ -164,11 +164,15 @@ export const superjsonTransformer = createTransformer({
 Server (register multiple transformers):
 
 ```ts
-const appRouter = createRouter({ transformers: [superjsonTransformer] }, [
+const appRouter = createRouter([
   app.get("/now").handle(async (c) => {
     return c.json({ now: new Date() });
   }),
 ]);
+
+const server = createServer(appRouter, {
+  transformers: [superjsonTransformer],
+});
 ```
 
 JavaScript client (using Superjson):

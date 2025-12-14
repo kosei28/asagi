@@ -11,11 +11,9 @@ export type {
   RouteBuilder,
 } from './route';
 
-export {
-  createRouter,
-  type RouterInstance,
-  type RouterOptions,
-} from './router';
+export { createRouter } from './router';
+
+export { createServer, type Server, type ServerOptions } from './server';
 
 export {
   createTransformer,
