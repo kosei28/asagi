@@ -55,7 +55,7 @@ const validateValue = async <Schema extends StandardSchemaV1<any, any>>(
 
 export type ValidatorOutput = TypedOutput<'json', { error: string; issues: StandardSchemaV1.Issue[] }, 400>;
 
-export const createInputValidator = <S extends Partial<InputSchemas>>(
+export const createInputValidator = <S extends InputSchemas>(
   schemas: S
 ): Middleware<any, any, S, ValidatorOutput | undefined> => {
   return async (c, next) => {

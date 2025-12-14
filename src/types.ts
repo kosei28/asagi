@@ -3,13 +3,34 @@ import type { Context } from './context';
 import type { JSONValue, MaybePromise } from './utils/types';
 
 export type InputSchemas = {
-  json: StandardSchemaV1<JSONValue, any>;
-  form: StandardSchemaV1<Record<string, string | string[] | File | File[]>, any>;
-  query: StandardSchemaV1<Record<string, string>, any>;
-  params: StandardSchemaV1<Record<string, string>, any>;
+  json?: StandardSchemaV1<JSONValue, any>;
+  form?: StandardSchemaV1<Record<string, string | string[] | File | File[]>, any>;
+  query?: StandardSchemaV1<Record<string, string>, any>;
+  params?: StandardSchemaV1<Record<string, string>, any>;
 };
 
-export type ParsedInput<S extends Partial<InputSchemas>> = {
+type InputSchemasWithoutBody = {
+  query?: InputSchemas['query'];
+  params?: InputSchemas['params'];
+};
+
+type InputSchemasWithJson = InputSchemasWithoutBody & {
+  json?: InputSchemas['json'];
+  form?: never;
+};
+
+type InputSchemasWithForm = InputSchemasWithoutBody & {
+  form?: InputSchemas['form'];
+  json?: never;
+};
+
+export type NewInputSchemas<Current extends InputSchemas> = 'json' extends keyof Current
+  ? InputSchemasWithJson
+  : 'form' extends keyof Current
+    ? InputSchemasWithForm
+    : InputSchemasWithJson | InputSchemasWithForm;
+
+export type ParsedInput<S extends InputSchemas> = {
   [K in keyof S as S[K] extends StandardSchemaV1<any, any> ? K : never]: S[K] extends StandardSchemaV1<any, infer O>
     ? O
     : never;
@@ -42,13 +63,13 @@ export type UpdateVar<Var extends object, NewVar extends object> = Omit<Var, key
 export type Middleware<
   Var extends object,
   Params extends Record<string, string>,
-  Input extends Partial<InputSchemas>,
+  Input extends InputSchemas,
   Result extends HandlerResult,
 > = (context: Context<Var, Params, Input>, next: Next) => MaybePromise<Result>;
 
 export type Handler<
   Var extends object,
   Params extends Record<string, string>,
-  Input extends Partial<InputSchemas>,
+  Input extends InputSchemas,
   Result extends HandlerResult,
 > = (context: Context<Var, Params, Input>) => MaybePromise<Result>;

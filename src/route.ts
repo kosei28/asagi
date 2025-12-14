@@ -6,7 +6,7 @@ import {
   type MiddlewareSource,
   toMiddlewareList,
 } from './middleware';
-import type { Handler, InputSchemas, Middleware, Output, UpdateVar } from './types';
+import type { Handler, InputSchemas, Middleware, NewInputSchemas, Output, UpdateVar } from './types';
 import { normalizePath, trimTrailingSlash } from './utils/paths';
 import type { JoinPath, TrimTrailingSlash } from './utils/types';
 import { createInputValidator, type ValidatorOutput } from './validators';
@@ -19,7 +19,7 @@ export type BuiltRoute<
   Method extends string,
   Path extends string,
   Params extends Record<string, string>,
-  Input extends Partial<InputSchemas>,
+  Input extends InputSchemas,
   O extends Output,
 > = {
   method: Method;
@@ -40,7 +40,7 @@ export class RouteBuilder<
   Prefix extends string,
   Method extends string,
   Path extends string,
-  Input extends Partial<InputSchemas>,
+  Input extends InputSchemas,
   O extends Output,
 > {
   constructor(
@@ -95,7 +95,7 @@ export class RouteBuilder<
     };
   }
 
-  input<S extends Partial<InputSchemas>>(
+  input<S extends NewInputSchemas<Input>>(
     schemas: S
   ): RouteBuilder<InitVar, Var, Prefix, Method, Path, Input & S, O | ValidatorOutput> {
     const validator = createInputValidator(schemas);

@@ -14,7 +14,7 @@ type InputBase = {
   [K in keyof InputSchemas]?: InputSchemas[K] extends StandardSchemaV1<infer I, any> ? I : never;
 };
 
-type Input<S extends Partial<InputSchemas>> = {
+type Input<S extends InputSchemas> = {
   [K in keyof S as S[K] extends StandardSchemaV1<any, any> ? K : never]: S[K] extends StandardSchemaV1<infer I, any>
     ? I
     : never;

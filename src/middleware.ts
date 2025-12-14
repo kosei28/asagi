@@ -1,4 +1,4 @@
-import type { InputSchemas, Middleware, Output, UpdateVar } from './types';
+import type { InputSchemas, Middleware, NewInputSchemas, Output, UpdateVar } from './types';
 import { createInputValidator, type ValidatorOutput } from './validators';
 
 export type MiddlewareSource = Middleware<any, any, any, any> | MiddlewareBuilder<any, any, any, any>;
@@ -30,7 +30,7 @@ export type InferMiddlewareOutput<M extends MiddlewareSource> =
 export class MiddlewareBuilder<
   Var extends object,
   Params extends Record<string, string>,
-  Input extends Partial<InputSchemas>,
+  Input extends InputSchemas,
   O extends Output,
 > {
   constructor(private readonly middlewares: Middleware<any, any, any, any>[]) {}
@@ -50,7 +50,7 @@ export class MiddlewareBuilder<
     return new MiddlewareBuilder([...this.middlewares, ...toMiddlewareList(middleware)]);
   }
 
-  input<S extends Partial<InputSchemas>>(schemas: S): MiddlewareBuilder<Var, Params, Input & S, O | ValidatorOutput> {
+  input<S extends NewInputSchemas<Input>>(schemas: S): MiddlewareBuilder<Var, Params, Input & S, O | ValidatorOutput> {
     const validator = createInputValidator(schemas);
     return new MiddlewareBuilder([...this.middlewares, validator]);
   }

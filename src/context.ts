@@ -9,7 +9,7 @@ type OutputBuilder<Type extends OutputType> = {
   <T extends OutputTypeMap[Type]>(body: T, init?: Omit<ResponseInit, 'status'>): TypedOutput<Type, T, 200>;
 };
 
-export class Context<Var extends object, Params extends Record<string, string>, Input extends Partial<InputSchemas>> {
+export class Context<Var extends object, Params extends Record<string, string>, Input extends InputSchemas> {
   readonly req: Request;
   readonly params: Params;
   var: Var;

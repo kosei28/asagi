@@ -8,7 +8,7 @@ import {
   toMiddlewareList,
 } from './middleware';
 import { RouteBuilder } from './route';
-import type { InputSchemas, Middleware, Output, UpdateVar } from './types';
+import type { InputSchemas, Middleware, NewInputSchemas, Output, UpdateVar } from './types';
 import { normalizePath, trimTrailingSlash } from './utils/paths';
 import type { JoinPath, TrimTrailingSlash } from './utils/types';
 import { createInputValidator, type ValidatorOutput } from './validators';
@@ -17,7 +17,7 @@ export class AppBuilder<
   InitVar extends object,
   Var extends object,
   Prefix extends string,
-  Input extends Partial<InputSchemas>,
+  Input extends InputSchemas,
   O extends Output,
 > {
   constructor(
@@ -54,7 +54,9 @@ export class AppBuilder<
     return new MiddlewareBuilder([]);
   }
 
-  input<S extends Partial<InputSchemas>>(schemas: S): AppBuilder<InitVar, Var, Prefix, Input & S, O | ValidatorOutput> {
+  input<S extends NewInputSchemas<Input>>(
+    schemas: S
+  ): AppBuilder<InitVar, Var, Prefix, Input & S, O | ValidatorOutput> {
     const validator = createInputValidator(schemas);
     return new AppBuilder(this.prefix, [...this.middlewares, validator]);
   }
