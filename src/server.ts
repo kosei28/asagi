@@ -2,7 +2,7 @@ import { addRoute as addRou3Route, createRouter as createRou3, findRoute } from 
 import { Context } from './context';
 import type { BuiltRoute } from './route';
 import { jsonTransformer, TRANSFORMER_HEADER, type Transformer } from './transformer';
-import type { Handler, HandlerResult, Middleware, OutputType } from './types';
+import type { Handler, Middleware, Output, OutputType } from './types';
 
 const defaultContentTypes: Record<OutputType, string | undefined> = {
   json: 'application/json',
@@ -10,7 +10,7 @@ const defaultContentTypes: Record<OutputType, string | undefined> = {
   body: 'application/octet-stream',
 };
 
-const ensureResponse = (result: HandlerResult, transformer: Transformer): Response => {
+const ensureResponse = (result: Output, transformer: Transformer): Response => {
   if (result === undefined) {
     return new Response(null, { status: 204 });
   }

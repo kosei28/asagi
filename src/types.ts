@@ -52,11 +52,9 @@ export type TypedOutput<Type extends OutputType, Body, Status extends number = n
   headers?: HeadersInit;
 };
 
-export type Output = TypedOutput<OutputType, any, number> | Response;
+export type Output = TypedOutput<OutputType, any, number> | Response | undefined;
 
 export type Next = () => Promise<void>;
-
-export type HandlerResult = TypedOutput<OutputType, any> | Response | void | undefined;
 
 export type UpdateVar<Var extends object, NewVar extends object> = Omit<Var, keyof NewVar> & NewVar;
 
@@ -64,12 +62,12 @@ export type Middleware<
   Var extends object,
   Params extends Record<string, string>,
   Input extends InputSchemas,
-  Result extends HandlerResult,
+  Result extends Output | void,
 > = (context: Context<Var, Params, Input>, next: Next) => MaybePromise<Result>;
 
 export type Handler<
   Var extends object,
   Params extends Record<string, string>,
   Input extends InputSchemas,
-  Result extends HandlerResult,
+  Result extends Output | void,
 > = (context: Context<Var, Params, Input>) => MaybePromise<Result>;

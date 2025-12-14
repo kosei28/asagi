@@ -11,8 +11,7 @@ import { normalizePath, trimTrailingSlash } from './utils/paths';
 import type { JoinPath, TrimTrailingSlash } from './utils/types';
 import { createInputValidator, type ValidatorOutput } from './validators';
 
-type InferHandlerOutput<T> =
-  T extends Handler<any, any, any, infer O> ? (O extends void | undefined ? Response : O) : never;
+type InferHandlerOutput<T> = T extends Handler<any, any, any, infer O> ? (O extends void ? undefined : O) : never;
 
 export type BuiltRoute<
   InitVar extends object,
