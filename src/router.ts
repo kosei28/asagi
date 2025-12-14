@@ -2,12 +2,11 @@ import type { BuiltRoute } from './route';
 
 type RouterSource = BuiltRoute<any, any, any, any, any> | BuiltRoute<any, any, any, any, any>[];
 
-type ExtractRoute<R extends RouterSource> =
-  R extends BuiltRoute<any, any, any, any, any>[]
-    ? R[number]
-    : R extends BuiltRoute<any, any, any, any, any>
-      ? R
-      : never;
+type ExtractRoute<R extends RouterSource> = R extends BuiltRoute<any, any, any, any, any>[]
+  ? R[number]
+  : R extends BuiltRoute<any, any, any, any, any>
+    ? R
+    : never;
 
 type FlattenRoutes<Routes extends RouterSource[]> = ExtractRoute<Routes[number]>[];
 
