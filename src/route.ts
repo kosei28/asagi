@@ -15,6 +15,7 @@ type InferHandlerOutput<T> =
   T extends Handler<any, any, any, infer O> ? (O extends void | undefined ? Response : O) : never;
 
 export type BuiltRoute<
+  InitVar extends object,
   Method extends string,
   Path extends string,
   Params extends Record<string, string>,
@@ -25,9 +26,16 @@ export type BuiltRoute<
   path: Path;
   middlewares: Middleware<any, Params, Input, any>[];
   handler: Handler<any, Params, Input, O>;
+  /**
+   * Type-only property for inferring InitVar. Do not use at runtime.
+   * @internal
+   * @deprecated This property exists only for type inference and is never set at runtime.
+   */
+  _initVar?: InitVar;
 };
 
 export class RouteBuilder<
+  InitVar extends object,
   Var extends object,
   Prefix extends string,
   Method extends string,
@@ -42,8 +50,8 @@ export class RouteBuilder<
     private readonly middlewares: Middleware<any, any, any, any>[]
   ) {}
 
-  $var<NewVar extends object>(): RouteBuilder<UpdateVar<Var, NewVar>, Prefix, Method, Path, Input, O> {
-    return new RouteBuilder<UpdateVar<Var, NewVar>, Prefix, Method, Path, Input, O>(
+  $var<NewVar extends object>(): RouteBuilder<InitVar, UpdateVar<Var, NewVar>, Prefix, Method, Path, Input, O> {
+    return new RouteBuilder<InitVar, UpdateVar<Var, NewVar>, Prefix, Method, Path, Input, O>(
       this.prefix,
       this.path,
       this.method,
@@ -54,6 +62,7 @@ export class RouteBuilder<
   use<M extends MiddlewareSource = Middleware<Var, InferRouteParams<JoinPath<Prefix, Path>>, Input, any>>(
     middleware: M
   ): RouteBuilder<
+    InitVar,
     Var & InferMiddlewareVar<M>,
     Prefix,
     Method,
@@ -70,6 +79,7 @@ export class RouteBuilder<
   handle<H extends Handler<Var, InferRouteParams<JoinPath<Prefix, Path>>, Input, any>>(
     handler: H
   ): BuiltRoute<
+    InitVar,
     Method,
     TrimTrailingSlash<JoinPath<Prefix, Path>>,
     InferRouteParams<JoinPath<Prefix, Path>>,
@@ -87,7 +97,7 @@ export class RouteBuilder<
 
   input<S extends Partial<InputSchemas>>(
     schemas: S
-  ): RouteBuilder<Var, Prefix, Method, Path, Input & S, O | ValidatorOutput> {
+  ): RouteBuilder<InitVar, Var, Prefix, Method, Path, Input & S, O | ValidatorOutput> {
     const validator = createInputValidator(schemas);
     return new RouteBuilder(this.prefix, this.path, this.method, [...this.middlewares, validator]);
   }

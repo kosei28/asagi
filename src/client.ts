@@ -20,16 +20,18 @@ type Input<S extends Partial<InputSchemas>> = {
     : never;
 };
 
-type ParamsForRoute<R> = R extends BuiltRoute<any, any, infer Params, any, any> ? Params : never;
+type ParamsForRoute<R> = R extends BuiltRoute<any, any, any, infer Params, any, any> ? Params : never;
 
-type InputSchemasForRoute<R> = R extends BuiltRoute<any, any, any, infer Input, any> ? Input : {};
+type InputSchemasForRoute<R> = R extends BuiltRoute<any, any, any, any, infer Input, any> ? Input : {};
 
-type InputForRoute<R extends BuiltRoute<any, any, any, any, any>> = Input<InputSchemasForRoute<R>> &
+type InputForRoute<R extends BuiltRoute<any, any, any, any, any, any>> = Input<InputSchemasForRoute<R>> &
   (keyof ParamsForRoute<R> extends never ? {} : { params: ParamsForRoute<R> });
 
-type InputRequired<R extends BuiltRoute<any, any, any, any, any>> = keyof InputForRoute<R> extends never ? false : true;
+type InputRequired<R extends BuiltRoute<any, any, any, any, any, any>> = keyof InputForRoute<R> extends never
+  ? false
+  : true;
 
-type OutputForRoute<R> = R extends BuiltRoute<any, any, any, any, infer O> ? O : never;
+type OutputForRoute<R> = R extends BuiltRoute<any, any, any, any, any, infer O> ? O : never;
 
 type OkStatuses = IntRange<200, 300>;
 
@@ -45,7 +47,7 @@ type TypedResponse<O, Kind extends keyof TransformKind> = O extends TypedOutput<
   : Response;
 
 type RequestFn<
-  R extends BuiltRoute<any, any, any, any, any>,
+  R extends BuiltRoute<any, any, any, any, any, any>,
   Kind extends keyof TransformKind,
 > = InputRequired<R> extends true
   ? {
@@ -64,7 +66,7 @@ type RequestFn<
       ): Promise<TypedResponse<OutputForRoute<R>, Kind>>;
     };
 
-type RouteLeaf<R extends BuiltRoute<any, any, any, any, any>, Kind extends keyof TransformKind> = {
+type RouteLeaf<R extends BuiltRoute<any, any, any, any, any, any>, Kind extends keyof TransformKind> = {
   [K in `$${Lowercase<R['method']>}`]: RequestFn<R, Kind>;
 };
 
@@ -84,17 +86,17 @@ type PathObject<Segments extends string[], Leaf> = Segments extends []
     ? { [K in Head]: PathObject<Tail, Leaf> }
     : Record<string, Leaf>;
 
-type RouteTree<R extends BuiltRoute<any, any, any, any, any>, Kind extends keyof TransformKind> = PathObject<
+type RouteTree<R extends BuiltRoute<any, any, any, any, any, any>, Kind extends keyof TransformKind> = PathObject<
   SplitPath<R['path']>,
   RouteLeaf<R, Kind>
 >;
 
 export type ClientFromRouter<
-  Routes extends BuiltRoute<any, any, any, any, any>[],
+  Routes extends BuiltRoute<any, any, any, any, any, any>[],
   Kind extends keyof TransformKind,
 > = MergeUnion<
   Routes[number] extends infer Route
-    ? Route extends BuiltRoute<any, any, any, any, any>
+    ? Route extends BuiltRoute<any, any, any, any, any, any>
       ? RouteTree<Route, Kind>
       : never
     : never
@@ -215,7 +217,7 @@ const createNode = (state: NodeState): any => {
 };
 
 export const createClient = <
-  Routes extends BuiltRoute<any, any, any, any, any>[],
+  Routes extends BuiltRoute<any, any, any, any, any, any>[],
   T extends Transformer = Transformer<'json'>,
 >(
   options: ClientOptions = {}

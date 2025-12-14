@@ -77,21 +77,28 @@ const transformerFromHeader = (name: string | null, list: Transformer[]): Transf
   return list[0] ?? jsonTransformer;
 };
 
-export type ServerOptions = {
+export type ServerOptions<InitVar extends object> = {
   transformers?: Transformer[];
-};
+} & (keyof InitVar extends never ? { var?: Record<string, never> } : { var: InitVar });
 
 export type Server = {
   fetch: (req: Request) => Promise<Response>;
 };
 
-export function createServer<Routes extends BuiltRoute<any, any, any, any, any>[]>(
+type InferInitVar<R> = R extends BuiltRoute<infer InitVar, any, any, any, any, any>[] ? InitVar : never;
+
+type ServerOptionsArg<InitVar extends object> = keyof InitVar extends never
+  ? [options?: ServerOptions<InitVar>]
+  : [options: ServerOptions<InitVar>];
+
+export function createServer<Routes extends BuiltRoute<any, any, any, any, any, any>[]>(
   routes: Routes,
-  options?: ServerOptions
+  ...args: ServerOptionsArg<InferInitVar<Routes>>
 ): Server {
+  const options = args[0];
   const configuredTransformers = [jsonTransformer, ...(options?.transformers ?? [])];
 
-  const r3 = createRou3<BuiltRoute<any, any, any, any, any>>();
+  const r3 = createRou3<BuiltRoute<any, any, any, any, any, any>>();
 
   for (const route of routes) {
     addRou3Route(r3, route.method.toUpperCase(), route.path, route);
@@ -108,7 +115,7 @@ export function createServer<Routes extends BuiltRoute<any, any, any, any, any>[
     }
 
     const params = (match.params ?? {}) as Record<string, string>;
-    const targetRoute = match.data as BuiltRoute<any, any, any, any, any>;
+    const targetRoute = match.data as BuiltRoute<any, any, any, any, any, any>;
     const transformer = transformerFromHeader(req.headers.get(TRANSFORMER_HEADER), configuredTransformers);
     const chain = [...targetRoute.middlewares, targetRoute.handler];
     const result = await runChain(
@@ -116,7 +123,7 @@ export function createServer<Routes extends BuiltRoute<any, any, any, any, any>[
       {
         req,
         params,
-        var: {},
+        var: options?.var ?? ({} as InferInitVar<Routes>),
       },
       transformer
     );

@@ -9,7 +9,7 @@ A type-safe web framework for TypeScript.
 - Type-safe RPC client
 - Fully typed middleware — response types from middleware and validators are properly inferred
 - Type-safe context variables with `$var<T>()`
-- Honest TypeScript internals — no fake properties, no type lies
+- Type-safe initial context variables with `createApp<T>()` and `createServer()`
 
 **Routing & Middleware**
 
