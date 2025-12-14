@@ -1,6 +1,6 @@
 {
   "name": "asagi",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "A type-safe web framework for TypeScript.",
   "author": "kosei28 <contact@kosei28.com> (https://github.com/kosei28)",
   "license": "MIT",
