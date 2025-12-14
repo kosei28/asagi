@@ -7,7 +7,7 @@ import type {
   RouteTree,
   TypedResponse,
 } from './client';
-import { buildBody, buildPath, buildQueryString, buildTemplatePath, buildUrl } from './request';
+import { buildBody, buildPath, buildQueryString, buildTemplatePath, buildUrl, mergeRequestInit } from './request';
 import type { BuiltRoute } from './route';
 import { runChain } from './server';
 import { jsonTransformer } from './transformer';
@@ -43,6 +43,7 @@ export type CallerFromRouter<Routes extends BuiltRoute<any, any, any, any, any, 
 
 export type CallerOptions<InitVar extends object> = {
   baseUrl?: string | URL;
+  requestInit?: RequestInit;
 } & (keyof InitVar extends never ? { var?: Record<string, never> } : { var: InitVar });
 
 type NodeState = {
@@ -50,6 +51,7 @@ type NodeState = {
   segments: string[];
   initVar: object;
   routes: BuiltRoute<any, any, any, any, any, any>[];
+  requestInit?: RequestInit;
 };
 
 const createNode = (state: NodeState): any => {
@@ -80,11 +82,13 @@ const createNode = (state: NodeState): any => {
           const path = buildPath(state.segments, input?.params);
           const queryString = buildQueryString(input?.query);
           const urlString = buildUrl(state.baseUrl, path, queryString);
-          const headers = new Headers(requestInit?.headers);
-          const body = buildBody(input, headers, requestInit);
-          const finalMethod = method === 'ALL' ? (requestInit?.method ?? 'GET') : method;
+          const mergedInit = mergeRequestInit(state.requestInit, requestInit);
+          const headers = new Headers(mergedInit.headers);
+          const body = buildBody(input, headers, mergedInit);
+          const finalMethod = method === 'ALL' ? (mergedInit.method ?? 'GET') : method;
+
           const req = new Request(urlString, {
-            ...requestInit,
+            ...mergedInit,
             method: finalMethod,
             headers,
             body,
@@ -142,5 +146,6 @@ export function createCaller<Routes extends BuiltRoute<any, any, any, any, any, 
     segments: [],
     initVar: options?.var ?? {},
     routes,
+    requestInit: options?.requestInit,
   });
 }

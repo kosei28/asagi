@@ -69,3 +69,18 @@ export const buildBody = (
 export const buildUrl = (baseUrl: string | undefined, path: string, queryString: string): string => {
   return new URL(`${path}${queryString}`, baseUrl).toString();
 };
+
+export const mergeRequestInit = (base?: RequestInit, override?: RequestInit): RequestInit => {
+  const headers = new Headers(base?.headers);
+  const overrideHeaders = new Headers(override?.headers);
+
+  overrideHeaders.forEach((value, key) => {
+    headers.set(key, value);
+  });
+
+  return {
+    ...base,
+    ...override,
+    headers,
+  };
+};

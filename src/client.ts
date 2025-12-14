@@ -1,5 +1,5 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec';
-import { buildBody, buildPath, buildQueryString, buildUrl } from './request';
+import { buildBody, buildPath, buildQueryString, buildUrl, mergeRequestInit } from './request';
 import type { BuiltRoute } from './route';
 import {
   jsonTransformer,
@@ -107,6 +107,7 @@ export type ClientOptions = {
   baseUrl?: string | URL;
   transformer?: Transformer;
   fetch?: typeof fetch;
+  requestInit?: RequestInit;
 };
 
 const parseBody = async (response: Response, transformer: Transformer): Promise<unknown> => {
@@ -128,6 +129,7 @@ type NodeState = {
   segments: string[];
   transformer: Transformer;
   fetch: typeof fetch;
+  requestInit?: RequestInit;
 };
 
 const createNode = (state: NodeState): any => {
@@ -145,13 +147,14 @@ const createNode = (state: NodeState): any => {
           const path = buildPath(state.segments, input?.params);
           const queryString = buildQueryString(input?.query);
           const urlString = buildUrl(state.baseUrl, path, queryString);
-          const headers = new Headers(requestInit?.headers);
+          const mergedInit = mergeRequestInit(state.requestInit, requestInit);
+          const headers = new Headers(mergedInit.headers);
           headers.set(TRANSFORMER_HEADER, state.transformer.name);
-          const body = buildBody(input, headers, requestInit);
-          const finalMethod = method === 'ALL' ? (requestInit?.method ?? 'GET') : method;
+          const body = buildBody(input, headers, mergedInit);
+          const finalMethod = method === 'ALL' ? (mergedInit.method ?? 'GET') : method;
 
           const response = await state.fetch(urlString, {
-            ...requestInit,
+            ...mergedInit,
             method: finalMethod,
             headers,
             body,
@@ -194,5 +197,6 @@ export const createClient = <
     segments: [],
     transformer: options.transformer ?? jsonTransformer,
     fetch: options.fetch ?? globalThis.fetch,
+    requestInit: options.requestInit,
   });
 };
