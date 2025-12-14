@@ -16,11 +16,7 @@ const jsonReq = (method: string, path: string, body: unknown) => {
 };
 
 // Helper function to create form request
-const formReq = (
-  method: string,
-  path: string,
-  data: Record<string, FormDataEntryValue | FormDataEntryValue[]>
-) => {
+const formReq = (method: string, path: string, data: Record<string, FormDataEntryValue | FormDataEntryValue[]>) => {
   const formData = new FormData();
   for (const [key, value] of Object.entries(data)) {
     if (Array.isArray(value)) {
@@ -641,6 +637,101 @@ describe('Route Builder', () => {
         // @ts-expect-error json should not be allowed after form is set
         json: z.object({ name: z.string() }),
       });
+    });
+
+    it('should accept zod schemas in .input() (type-level)', () => {
+      const app = createApp()
+        .input({
+          query: z.object({
+            page: z.string().transform((v) => Number(v)),
+            limit: z.coerce.number<string>(),
+          }),
+          params: z.object({
+            id: z.coerce.number<string>(),
+          }),
+        })
+        .input({
+          json: z.object({
+            name: z.string(),
+            createdAt: z.coerce.date<string>(),
+          }),
+        });
+
+      app.post('/users/:id').handle((c) => {
+        expectTypeOf(c.input.query.page).toEqualTypeOf<number>();
+        expectTypeOf(c.input.query.limit).toEqualTypeOf<number>();
+        expectTypeOf(c.input.params.id).toEqualTypeOf<number>();
+        expectTypeOf(c.input.json.name).toEqualTypeOf<string>();
+        expectTypeOf(c.input.json.createdAt).toEqualTypeOf<Date>();
+        return c.json({ ok: true });
+      });
+    });
+
+    it('should reject incompatible schema types in .input() (type-level)', () => {
+      const app = createApp();
+
+      // @ts-expect-error .input() expects an object of schemas (not a single schema)
+      app.get('/').input(z.object({ q: z.string() }));
+
+      // @ts-expect-error unknown schema key should be rejected
+      app.get('/').input({ headers: z.object({ 'x-test': z.string() }) });
+
+      // @ts-expect-error cannot set both json and form at the same time
+      app.post('/').input({ json: z.object({ ok: z.boolean() }), form: z.object({ ok: z.string() }) });
+
+      // @ts-expect-error schema values must implement StandardSchemaV1
+      app.get('/').input({ query: {} });
+
+      // @ts-expect-error input type cannot be `unknown`
+      app.post('/').input({ query: z.unknown() });
+
+      // @ts-expect-error query schema input must be Record<string, string>
+      app.get('/').input({ query: z.string() });
+
+      // @ts-expect-error query schema input values must be strings (parsed output can differ)
+      app.get('/').input({ query: z.record(z.string(), z.number()) });
+
+      // @ts-expect-error query schema input values must be strings (parsed output can differ)
+      app.get('/').input({ query: z.object({ page: z.number() }) });
+
+      // @ts-expect-error params schema input must be Record<string, string>
+      app.get('/').input({ params: z.string() });
+
+      // @ts-expect-error params schema input values must be strings (parsed output can differ)
+      app.get('/').input({ params: z.record(z.string(), z.number()) });
+
+      // @ts-expect-error params schema input values must be strings (parsed output can differ)
+      app.get('/').input({ params: z.object({ page: z.number() }) });
+
+      // @ts-expect-error json schema input must be JSONValue
+      app.post('/').input({ json: z.instanceof(Date) });
+
+      // @ts-expect-error json schema input must be JSONValue
+      app.post('/').input({ json: z.bigint() });
+
+      // @ts-expect-error json schema input must be JSONValue
+      app.post('/').input({ json: z.symbol() });
+
+      // @ts-expect-error json schema input must be JSONValue
+      app.post('/').input({ json: z.undefined() });
+
+      // @ts-expect-error json schema input must be JSONValue
+      app.post('/').input({ json: z.function() });
+
+      // @ts-expect-error form schema input must be Record<string, ...> not a scalar
+      app.post('/upload').input({ form: z.string() });
+
+      // @ts-expect-error form schema input values must be string/string[]/File/File[]
+      app.post('/upload').input({ form: z.object({ file: z.number() }) });
+
+      // @ts-expect-error form schema input values must be string/string[]/File/File[]
+      app.post('/upload').input({ form: z.record(z.string(), z.boolean()) });
+
+      // @ts-expect-error form schema input values must be string/string[]/File/File[]
+      app.post('/upload').input({ form: z.object({ nums: z.array(z.number()) }) });
+
+      // @ts-expect-error form schema input values must be string/string[]/File/File[] (no nested objects)
+      app.post('/upload').input({ form: z.object({ meta: z.object({ a: z.string() }) }) });
     });
   });
 
