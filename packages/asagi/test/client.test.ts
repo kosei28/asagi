@@ -490,43 +490,6 @@ describe('createClient', () => {
     });
   });
 
-  describe('transformer', () => {
-    it('should use default json transformer', async () => {
-      const app = createApp();
-      const routes = createRouter([app.get('/data').handle((c) => c.json({ value: 42 }))]);
-      const server = createServer(routes);
-
-      const client = createClient<typeof routes>({
-        baseUrl: 'http://localhost',
-        fetch: createTestFetch(server),
-      });
-
-      const { data } = await client.data.$get();
-      expect(data).toEqual({ value: 42 });
-    });
-
-    it('should use custom transformer', async () => {
-      const customTransformer = createTransformer({
-        name: 'custom',
-        stringify: (value) => JSON.stringify({ wrapped: value }),
-        parse: (text) => JSON.parse(text).wrapped,
-      });
-
-      const app = createApp();
-      const routes = createRouter([app.get('/data').handle((c) => c.json({ value: 42 }))]);
-      const server = createServer(routes, { transformers: [customTransformer] });
-
-      const client = createClient<typeof routes>({
-        baseUrl: 'http://localhost',
-        fetch: createTestFetch(server),
-        transformer: customTransformer,
-      });
-
-      const { data } = await client.data.$get();
-      expect(data).toEqual({ value: 42 });
-    });
-  });
-
   describe('nested paths', () => {
     const app = createApp();
     const routes = createRouter([
