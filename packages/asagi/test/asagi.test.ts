@@ -16,10 +16,18 @@ const jsonReq = (method: string, path: string, body: unknown) => {
 };
 
 // Helper function to create form request
-const formReq = (method: string, path: string, data: Record<string, FormDataEntryValue>) => {
+const formReq = (
+  method: string,
+  path: string,
+  data: Record<string, FormDataEntryValue | FormDataEntryValue[]>
+) => {
   const formData = new FormData();
   for (const [key, value] of Object.entries(data)) {
-    formData.append(key, value);
+    if (Array.isArray(value)) {
+      for (const item of value) formData.append(key, item);
+    } else {
+      formData.append(key, value);
+    }
   }
   return req(method, path, { body: formData });
 };
@@ -516,6 +524,46 @@ describe('Route Builder', () => {
       const body = await res.json();
       expect(body).toEqual({ name: 'hello.txt', size: 5, type: 'text/plain' });
       expect(body.type).toMatch(/^text\/plain/);
+    });
+
+    it('should validate form data with multiple string values', async () => {
+      const app = createApp();
+      const routes = createRouter([
+        app
+          .post('/tags')
+          .input({ form: z.object({ tag: z.array(z.string()) }) })
+          .handle((c) => c.json({ tag: c.input.form.tag })),
+      ]);
+      const server = createServer(routes);
+
+      const res = await server.fetch(formReq('POST', '/tags', { tag: ['a', 'b', 'c'] }));
+      expect(await res.json()).toEqual({ tag: ['a', 'b', 'c'] });
+    });
+
+    it('should validate form data with multiple files', async () => {
+      const app = createApp();
+      const routes = createRouter([
+        app
+          .post('/uploads')
+          .input({ form: z.object({ file: z.array(z.file()) }) })
+          .handle((c) =>
+            c.json({
+              names: c.input.form.file.map((f) => f.name),
+              sizes: c.input.form.file.map((f) => f.size),
+              types: c.input.form.file.map((f) => f.type.split(';')[0]),
+            })
+          ),
+      ]);
+      const server = createServer(routes);
+
+      const file1 = new File(['hello'], 'hello.txt', { type: 'text/plain' });
+      const file2 = new File(['world!'], 'world.txt', { type: 'text/plain' });
+      const res = await server.fetch(formReq('POST', '/uploads', { file: [file1, file2] }));
+      expect(await res.json()).toEqual({
+        names: ['hello.txt', 'world.txt'],
+        sizes: [5, 6],
+        types: ['text/plain', 'text/plain'],
+      });
     });
 
     it('should return 400 for invalid json input', async () => {

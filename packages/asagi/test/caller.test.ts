@@ -188,6 +188,20 @@ describe('createCaller', () => {
             type: c.input.form.file.type.split(';')[0],
           })
         ),
+      app
+        .post('/tags')
+        .input({ form: z.object({ tag: z.array(z.string()) }) })
+        .handle((c) => c.json({ tag: c.input.form.tag })),
+      app
+        .post('/uploads')
+        .input({ form: z.object({ file: z.array(z.file()) }) })
+        .handle((c) =>
+          c.json({
+            names: c.input.form.file.map((f) => f.name),
+            sizes: c.input.form.file.map((f) => f.size),
+            types: c.input.form.file.map((f) => f.type.split(';')[0]),
+          })
+        ),
     ]);
     const caller = createCaller(routes, { baseUrl: 'http://localhost' });
 
@@ -205,6 +219,24 @@ describe('createCaller', () => {
       expect(error).toBeUndefined();
       expect(data).toEqual({ name: 'hello.txt', size: 5, type: 'text/plain' });
       expect(data!.type).toMatch(/^text\/plain/);
+    });
+
+    it('should send form data with multiple string values', async () => {
+      const { data, error } = await caller.tags.$post({ form: { tag: ['a', 'b', 'c'] } });
+      expect(error).toBeUndefined();
+      expect(data).toEqual({ tag: ['a', 'b', 'c'] });
+    });
+
+    it('should send form data with multiple files', async () => {
+      const file1 = new File(['hello'], 'hello.txt', { type: 'text/plain' });
+      const file2 = new File(['world!'], 'world.txt', { type: 'text/plain' });
+      const { data, error } = await caller.uploads.$post({ form: { file: [file1, file2] } });
+      expect(error).toBeUndefined();
+      expect(data).toEqual({
+        names: ['hello.txt', 'world.txt'],
+        sizes: [5, 6],
+        types: ['text/plain', 'text/plain'],
+      });
     });
   });
 
