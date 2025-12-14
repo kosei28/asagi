@@ -43,7 +43,7 @@ export type ParsedInput<S extends InputSchemas> = {
 export type OutputTypeMap = {
   json: any;
   text: string;
-  body: BodyInit;
+  body: BodyInit | null;
 };
 
 export type OutputType = keyof OutputTypeMap;

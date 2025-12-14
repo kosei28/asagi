@@ -47,10 +47,12 @@ export type TypedResponse<O, Kind extends keyof TransformKind> = O extends Typed
     }
   : Response;
 
-type ClientResult<O, Kind extends keyof TransformKind> = O extends TypedOutput<any, any, infer Status>
-  ? Status extends OkStatuses
-    ? { data: BodyOfOutput<O>; error: undefined; res: TypedResponse<O, Kind> }
-    : { data: undefined; error: BodyOfOutput<O>; res: TypedResponse<O, Kind> }
+type ClientResult<O, Kind extends keyof TransformKind> = O extends TypedOutput<infer Type, any, infer Status>
+  ? Type extends 'body'
+    ? { data: undefined; error: undefined; res: TypedResponse<O, Kind> }
+    : Status extends OkStatuses
+      ? { data: BodyOfOutput<O>; error: undefined; res: TypedResponse<O, Kind> }
+      : { data: undefined; error: BodyOfOutput<O>; res: TypedResponse<O, Kind> }
   : { data: unknown; error: unknown; res: Response };
 
 type RequestFn<
@@ -115,7 +117,7 @@ const parseBody = async (response: Response, transformer: Transformer): Promise<
     return response.text();
   }
 
-  return response.arrayBuffer();
+  return undefined;
 };
 
 type NodeState = {
