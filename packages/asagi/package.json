@@ -32,7 +32,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "rimraf dist && tsc -p tsconfig.build.json",
     "test": "tsc --noEmit && bun test",
     "check": "biome check --write"
   },
@@ -42,6 +42,7 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "rimraf": "^6.1.2",
     "zod": "^4.1.13"
   },
   "peerDependencies": {
