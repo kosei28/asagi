@@ -1,4 +1,4 @@
-import { createCaller } from '../src';
+import { createCaller } from 'asagi';
 import { appRouter } from './index';
 
 const api = createCaller(appRouter, {
