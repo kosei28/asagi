@@ -1,4 +1,4 @@
-import { superjsonTransformer } from '@asagi/superjson-transformer';
+import { superjsonTransformer } from '@asagijs/superjson-transformer';
 import { createApp, createRouter, createServer } from 'asagi';
 import { z } from 'zod';
 

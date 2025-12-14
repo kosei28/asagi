@@ -165,14 +165,14 @@ You can use the official SuperJSON transformer to serialize complex types.
 First, install the transformer package:
 
 ```bash
-npm install @asagi/superjson-transformer
+npm install @asagijs/superjson-transformer
 ```
 
 Server:
 
 ```ts
 import { createApp, createServer } from "asagi";
-import { superjsonTransformer } from "@asagi/superjson-transformer";
+import { superjsonTransformer } from "@asagijs/superjson-transformer";
 
 const app = createApp();
 
@@ -191,7 +191,7 @@ JavaScript client (using Superjson):
 
 ```ts
 import { createClient } from "asagi";
-import { superjsonTransformer } from "@asagi/superjson-transformer";
+import { superjsonTransformer } from "@asagijs/superjson-transformer";
 import type { AppRouter } from "./server";
 
 const api = createClient<AppRouter, typeof superjsonTransformer>({
@@ -233,7 +233,7 @@ export const superjsonTransformer = createTransformer({
 ```
 
 `TransformKind` is required to infer the return type of the client.
-The official `@asagi/superjson-transformer` provides a strictly typed `SuperjsonParsed<T>` utility (instead of just `Body`) that ensures type safety for supported serializable values.
+The official `@asagijs/superjson-transformer` provides a strictly typed `SuperjsonParsed<T>` utility (instead of just `Body`) that ensures type safety for supported serializable values.
 
 ## Inspired by
 

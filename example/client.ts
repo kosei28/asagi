@@ -1,4 +1,4 @@
-import { superjsonTransformer } from '@asagi/superjson-transformer';
+import { superjsonTransformer } from '@asagijs/superjson-transformer';
 import { createClient } from 'asagi';
 import type { AppRouter } from './index';
 

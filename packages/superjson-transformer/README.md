@@ -1,11 +1,11 @@
-# @asagi/superjson-transformer
+# @asagijs/superjson-transformer
 
 SuperJSON transformer for Asagi.
 
 ## Installation
 
 ```bash
-npm install @asagi/superjson-transformer
+npm install @asagijs/superjson-transformer
 ```
 
 ## Usage
@@ -16,7 +16,7 @@ Register the transformer in the server options.
 
 ```ts
 import { createApp, createServer } from "asagi";
-import { superjsonTransformer } from "@asagi/superjson-transformer";
+import { superjsonTransformer } from "@asagijs/superjson-transformer";
 
 const app = createApp();
 
@@ -37,7 +37,7 @@ Pass the transformer to the client factory.
 
 ```ts
 import { createClient } from "asagi";
-import { superjsonTransformer } from "@asagi/superjson-transformer";
+import { superjsonTransformer } from "@asagijs/superjson-transformer";
 import type { AppRouter } from "./server";
 
 const api = createClient<AppRouter, typeof superjsonTransformer>({
