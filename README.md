@@ -141,7 +141,6 @@ You can use `createCaller` to call the router directly from the server-side.
 
 ```ts
 import { createCaller } from "asagi";
-import { appRouter } from "./server";
 
 const caller = createCaller(appRouter);
 
