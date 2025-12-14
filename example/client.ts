@@ -1,6 +1,6 @@
+import { superjsonTransformer } from '@asagi/superjson-transformer';
 import { createClient } from 'asagi';
 import type { AppRouter } from './index';
-import { superjsonTransformer } from './transformer';
 
 const api = createClient<AppRouter, typeof superjsonTransformer>({
   baseUrl: 'http://localhost:3000',

@@ -1,9 +1,10 @@
 import { createTransformer } from 'asagi';
 import SuperJSON from 'superjson';
+import type { SuperjsonParsed } from './types';
 
 declare module 'asagi' {
   interface TransformKind<Body> {
-    superjson: Body;
+    superjson: SuperjsonParsed<Body>;
   }
 }
 
@@ -12,3 +13,5 @@ export const superjsonTransformer = createTransformer({
   stringify: SuperJSON.stringify,
   parse: SuperJSON.parse,
 });
+
+export type { SuperjsonParsed } from './types';

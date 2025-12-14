@@ -10,7 +10,6 @@
     "example": {
       "name": "asagi-example",
       "dependencies": {
-        "superjson": "^2.2.6",
         "zod": "^4.1.13",
       },
       "devDependencies": {
@@ -34,8 +33,24 @@
         "typescript": "^5",
       },
     },
+    "packages/superjson-transformer": {
+      "name": "@asagi/superjson-transformer",
+      "version": "0.1.0",
+      "dependencies": {
+        "superjson": "^2.2.6",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "asagi": ">=0.1.3",
+        "typescript": "^5",
+      },
+    },
   },
   "packages": {
+    "@asagi/superjson-transformer": ["@asagi/superjson-transformer@workspace:packages/superjson-transformer"],
+
     "@biomejs/biome": ["@biomejs/biome@2.3.8", "", { "optionalDependencies": { "@biomejs/cli-darwin-arm64": "2.3.8", "@biomejs/cli-darwin-x64": "2.3.8", "@biomejs/cli-linux-arm64": "2.3.8", "@biomejs/cli-linux-arm64-musl": "2.3.8", "@biomejs/cli-linux-x64": "2.3.8", "@biomejs/cli-linux-x64-musl": "2.3.8", "@biomejs/cli-win32-arm64": "2.3.8", "@biomejs/cli-win32-x64": "2.3.8" }, "bin": { "biome": "bin/biome" } }, "sha512-Qjsgoe6FEBxWAUzwFGFrB+1+M8y/y5kwmg5CHac+GSVOdmOIqsAiXM5QMVGZJ1eCUCLlPZtq4aFAQ0eawEUuUA=="],
 
     "@biomejs/cli-darwin-arm64": ["@biomejs/cli-darwin-arm64@2.3.8", "", { "os": "darwin", "cpu": "arm64" }, "sha512-HM4Zg9CGQ3txTPflxD19n8MFPrmUAjaC7PQdLkugeeC0cQ+PiVrd7i09gaBS/11QKsTDBJhVg85CEIK9f50Qww=="],

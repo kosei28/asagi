@@ -22,7 +22,7 @@ A type-safe web framework for TypeScript.
 **Validation & Serialization**
 
 - Input validation with [Standard Schema](https://github.com/standard-schema/standard-schema) (Zod, Valibot, ArkType, etc.)
-- Custom transformers (Superjson, etc.)
+- JSON Transformer — Rich type support (Date, Map, Set) via SuperJSON or custom implementations
 
 ## Installation
 
@@ -30,19 +30,9 @@ A type-safe web framework for TypeScript.
 npm install asagi
 ```
 
-```bash
-pnpm add asagi
-```
-
-```bash
-bun add asagi
-```
-
-```bash
-yarn add asagi
-```
-
 ## Example
+
+For a more detailed example, see [example](example/).
 
 ### Server
 
@@ -159,11 +149,66 @@ if (!error) {
 }
 ```
 
-### Custom Transformer (Superjson)
+### JSON Transformer
 
-You can use custom transformers like Superjson to serialize complex types (Date, Map, Set, etc.).
+You can use transformers to customize JSON serialization for complex types (Date, Map, Set, etc.) that are not natively supported.
 
-The server can register multiple transformers and automatically selects the appropriate one based on the client's request. This allows JavaScript clients to use Superjson for rich type support, while other clients (e.g., mobile apps, curl) can use standard JSON.
+Asagi supports registering multiple transformers. It automatically selects the appropriate one based on the client's request:
+
+- **Rich Client**: Negotiates to use a specific transformer (e.g., SuperJSON) for rich type support.
+- **Standard Client**: Falls back to standard JSON if no specific transformer is requested.
+
+#### SuperJSON Transformer
+
+You can use the official SuperJSON transformer to serialize complex types.
+
+First, install the transformer package:
+
+```bash
+npm install @asagi/superjson-transformer
+```
+
+Server (register multiple transformers):
+
+```ts
+import { superjsonTransformer } from "@asagi/superjson-transformer";
+
+const appRouter = createRouter([
+  app.get("/now").handle(async (c) => {
+    return c.json({ now: new Date() });
+  }),
+]);
+
+export default createServer(appRouter, {
+  transformers: [superjsonTransformer],
+});
+```
+
+JavaScript client (using Superjson):
+
+```ts
+import { superjsonTransformer } from "@asagi/superjson-transformer";
+
+const api = createClient<AppRouter, typeof superjsonTransformer>({
+  baseUrl: "http://localhost:3000",
+  transformer: superjsonTransformer,
+});
+
+const { data } = await api.now.$get();
+console.log(data.now); // Date object (deserialized by Superjson)
+```
+
+Other clients (using standard JSON):
+
+```bash
+# curl or other HTTP clients receive standard JSON
+curl http://localhost:3000/now
+# => {"now":"2025-01-01T00:00:00.000Z"}
+```
+
+#### Custom Transformer
+
+You can also define your own custom transformers.
 
 ```ts
 import SuperJSON from "superjson";
@@ -182,41 +227,8 @@ export const superjsonTransformer = createTransformer({
 });
 ```
 
-Server (register multiple transformers):
-
-```ts
-const appRouter = createRouter([
-  app.get("/now").handle(async (c) => {
-    return c.json({ now: new Date() });
-  }),
-]);
-
-export default createServer(appRouter, {
-  transformers: [superjsonTransformer],
-});
-```
-
-JavaScript client (using Superjson):
-
-```ts
-const api = createClient<AppRouter, typeof superjsonTransformer>({
-  baseUrl: "http://localhost:3000",
-  transformer: superjsonTransformer,
-});
-
-const { data } = await api.now.$get();
-console.log(data.now); // Date object (deserialized by Superjson)
-```
-
-Other clients (using standard JSON):
-
-```bash
-# curl or other HTTP clients receive standard JSON
-curl http://localhost:3000/now
-# => {"now":"2025-01-01T00:00:00.000Z"}
-```
-
-For a more detailed example, see [example](example/).
+`TransformKind` is required to infer the return type of the client.
+The official `@asagi/superjson-transformer` provides a strictly typed `SuperjsonParsed<T>` utility (instead of just `Body`) that ensures type safety for supported serializable values.
 
 ## Inspired by
 
