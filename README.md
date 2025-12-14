@@ -241,3 +241,11 @@ The official `@asagijs/superjson-transformer` provides a strictly typed `Superjs
 - [Elysia](https://github.com/elysiajs/elysia)
 - [tRPC](https://github.com/trpc/trpc)
 - [oRPC](https://github.com/unnoq/orpc)
+
+## Author
+
+[kosei28](https://github.com/kosei28)
+
+## License
+
+Distributed under the MIT License. See [LICENSE](/LICENSE) for more information.

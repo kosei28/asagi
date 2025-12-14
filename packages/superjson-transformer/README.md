@@ -52,3 +52,11 @@ Now you can send and receive rich types like `Date`, `Map`, and `Set`.
 const { data } = await api.now.$get();
 console.log(data.now); // Date object
 ```
+
+## Author
+
+[kosei28](https://github.com/kosei28)
+
+## License
+
+Distributed under the MIT License. See [LICENSE](/LICENSE) for more information.
