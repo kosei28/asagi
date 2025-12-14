@@ -1,5 +1,7 @@
 export { type AppBuilder, createApp } from './app';
 
+export { type CallerFromRouter, type CallerOptions, createCaller } from './caller';
+
 export { type ClientFromRouter, type ClientOptions, createClient } from './client';
 
 export { Context } from './context';

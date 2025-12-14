@@ -2,11 +2,15 @@ import type { StandardSchemaV1 } from '@standard-schema/spec';
 import type { Context } from './context';
 import type { JSONValue, MaybePromise } from './utils/types';
 
+export type InputBase = {
+  json: JSONValue;
+  form: Record<string, string | string[] | File | File[]>;
+  query: Record<string, string>;
+  params: Record<string, string>;
+};
+
 export type InputSchemas = {
-  json?: StandardSchemaV1<JSONValue, any>;
-  form?: StandardSchemaV1<Record<string, string | string[] | File | File[]>, any>;
-  query?: StandardSchemaV1<Record<string, string>, any>;
-  params?: StandardSchemaV1<Record<string, string>, any>;
+  [K in keyof InputBase]?: StandardSchemaV1<InputBase[K], any>;
 };
 
 type InputSchemasWithoutBody = {

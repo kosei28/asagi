@@ -20,10 +20,6 @@ async function getUser(req: Request): Promise<User | null> {
   return { id: 'user123', name: 'Alice' };
 }
 
-async function log(req: Request, res: Response) {
-  console.log(`${req.method} ${req.url} - ${res.status}`);
-}
-
 async function getItems(): Promise<Item[]> {
   return [
     { id: 'item1', name: 'Item 1' },
@@ -39,16 +35,22 @@ async function saveItem(item: NewItem, user: User) {
   // ...
 }
 
-const app = createApp()
+async function log(req: Request, res: Response) {
+  console.log(`${req.method} ${req.url} - ${res.status}`);
+}
+
+const app = createApp<{ user: User | null | undefined }>()
   .use(async (c, next) => {
     await next();
     await log(c.req, c.res);
   })
-  .$var<{ user: User | null }>()
   .use(async (c, next) => {
-    c.var.user = await getUser(c.req);
+    if (c.var.user === undefined) {
+      c.var.user = await getUser(c.req);
+    }
     await next();
-  });
+  })
+  .$var<{ user: User | null }>();
 
 const authed = app
   .createMiddleware()
@@ -66,11 +68,6 @@ const itemsApp = app.basePath('/items').use(async (c, next) => {
 });
 
 const itemsRouter = createRouter([
-  itemsApp.get('/').handle(async (c) => {
-    const items = await getItems();
-    return c.json({ items });
-  }),
-
   itemsApp
     .post('/')
     .use(authed)
@@ -81,6 +78,11 @@ const itemsRouter = createRouter([
       return c.json({ success: true });
     }),
 
+  itemsApp.get('/').handle(async (c) => {
+    const items = await getItems();
+    return c.json({ items });
+  }),
+
   itemsApp.get('/:id').handle(async (c) => {
     const item = await getItem(c.params.id);
     if (!item) {
@@ -90,7 +92,7 @@ const itemsRouter = createRouter([
   }),
 ]);
 
-const appRouter = createRouter([
+export const appRouter = createRouter([
   app.get('/now').handle(async (c) => {
     return c.json({
       now: new Date(),
@@ -107,8 +109,9 @@ const appRouter = createRouter([
   itemsRouter,
 ]);
 
+export type AppRouter = typeof appRouter;
+
 export default createServer(appRouter, {
+  var: { user: undefined },
   transformers: [superjsonTransformer],
 });
-
-export type AppRouter = typeof appRouter;

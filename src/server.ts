@@ -1,52 +1,17 @@
 import { addRoute as addRou3Route, createRouter as createRou3, findRoute } from 'rou3';
 import { Context } from './context';
+import { ensureResponse } from './response';
 import type { BuiltRoute } from './route';
 import { jsonTransformer, TRANSFORMER_HEADER, type Transformer } from './transformer';
-import type { Handler, Middleware, Output, OutputType } from './types';
+import type { Handler, Middleware, Output } from './types';
 
-const defaultContentTypes: Record<OutputType, string | undefined> = {
-  json: 'application/json',
-  text: 'text/plain; charset=utf-8',
-  body: 'application/octet-stream',
-};
-
-const ensureResponse = (result: Output, transformer: Transformer): Response => {
-  if (result === undefined) {
-    return new Response(null, { status: 204 });
-  }
-
-  if (result instanceof Response) {
-    return result;
-  }
-
-  const init: ResponseInit =
-    result.status !== undefined || result.headers ? { status: result.status, headers: result.headers } : {};
-  const headers = new Headers(init.headers);
-
-  const contentType = defaultContentTypes[result.type];
-  if (contentType && !headers.has('content-type')) {
-    headers.set('content-type', contentType);
-  }
-
-  const responseInit: ResponseInit = { ...init, headers };
-
-  let response: Response;
-  if (result.type === 'json') {
-    const body = transformer.stringify(result.body);
-    response = new Response(body, responseInit);
-  } else {
-    response = new Response(result.body, responseInit);
-  }
-
-  return response;
-};
-
-const runChain = async (
+export const runChain = async (
   stack: (Middleware<any, any, any, any> | Handler<any, any, any, any>)[],
-  baseContext: { req: Request; params: any; var: any },
+  baseContext: { req: Request; params: Record<string, string>; var: any },
   transformer: Transformer
-): Promise<Response> => {
+): Promise<{ output?: Output; response: Response }> => {
   const context = new Context(baseContext.req, baseContext.params, baseContext.var, {});
+  let output: Output;
 
   const invoke = async (index: number): Promise<void> => {
     const current = stack[index];
@@ -61,12 +26,21 @@ const runChain = async (
     const result = await (current as Middleware<any, any, any, any>)(context, next);
 
     if (result !== undefined) {
+      output = result;
       context.res = ensureResponse(result, transformer);
     }
   };
 
-  await invoke(0);
-  return context.res;
+  try {
+    await invoke(0);
+  } catch {
+    context.res = new Response('Internal Server Error', { status: 500 });
+  }
+
+  return {
+    output: output,
+    response: context.res,
+  };
 };
 
 const transformerFromHeader = (name: string | null, list: Transformer[]): Transformer => {
@@ -124,20 +98,16 @@ export function createServer<Routes extends BuiltRoute<any, any, any, any, any, 
       return new Response('Not Found', { status: 404 });
     }
 
-    const params = match.params ?? {};
-    const targetRoute = match.data;
-    const transformer = transformerFromHeader(req.headers.get(TRANSFORMER_HEADER), configuredTransformers);
-    const chain = [...targetRoute.middlewares, targetRoute.handler];
     const result = await runChain(
-      chain,
+      [...match.data.middlewares, match.data.handler],
       {
         req,
-        params,
+        params: match.params ?? {},
         var: options?.var ?? {},
       },
-      transformer
+      transformerFromHeader(req.headers.get(TRANSFORMER_HEADER), configuredTransformers)
     );
-    return result;
+    return result.response;
   };
 
   return { fetch };

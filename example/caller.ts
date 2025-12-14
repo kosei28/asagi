@@ -1,10 +1,10 @@
-import { createClient } from '../src';
-import type { AppRouter } from './index';
-import { superjsonTransformer } from './transformer';
+import { createCaller } from '../src';
+import { appRouter } from './index';
 
-const api = createClient<AppRouter, typeof superjsonTransformer>({
-  baseUrl: 'http://localhost:3000',
-  transformer: superjsonTransformer,
+const api = createCaller(appRouter, {
+  var: {
+    user: { id: 'user123', name: 'Alice' },
+  },
 });
 
 async function fetchStatus() {

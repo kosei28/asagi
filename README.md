@@ -7,9 +7,10 @@ A type-safe web framework for TypeScript.
 **Type Safety**
 
 - Type-safe RPC client
-- Fully typed middleware — response types from middleware and validators are properly inferred
+- Type-safe Caller (Server-side RPC)
 - Type-safe context variables with `$var<T>()`
 - Type-safe initial context variables with `createApp<T>()` and `createServer()`
+- Fully typed middleware — response types from middleware and validators are properly inferred
 
 **Routing & Middleware**
 
@@ -69,11 +70,6 @@ const authed = app
 const itemsApp = app.basePath("/items");
 
 const itemsRouter = createRouter([
-  itemsApp.get("/").handle(async (c) => {
-    const items = await getItems();
-    return c.json({ items });
-  }),
-
   itemsApp
     .post("/")
     .use(authed)
@@ -83,6 +79,11 @@ const itemsRouter = createRouter([
       await saveItem(item, c.var.user);
       return c.json({ success: true });
     }),
+
+  itemsApp.get("/").handle(async (c) => {
+    const items = await getItems();
+    return c.json({ items });
+  }),
 
   itemsApp.get("/:id").handle(async (c) => {
     const item = await getItem(c.params.id);
@@ -119,22 +120,43 @@ const api = createClient<AppRouter>({
   baseUrl: "http://localhost:3000",
 });
 
-// GET /items/:id
-const res = await api.items[":id"].$get({
-  params: { id: "item123" },
-});
-if (res.ok) {
-  const body = await res.json(); // { item: Item }
-  console.log(body.item);
-}
-
 // POST /items
-const res = await api.items.$post({
+const { data } = await api.items.$post({
   json: { name: "New Item" },
 });
-if (res.ok) {
-  const body = await res.json(); // { success: boolean }
-  console.log(body.success);
+console.log(data); // { success: boolean }
+
+// GET /items/:id
+const { data, error } = await api.items[":id"].$get({
+  params: { id: "item123" },
+});
+if (!error) {
+  console.log(data); // { item: Item }
+}
+```
+
+### Caller
+
+You can use `createCaller` to call the router directly from the server-side.
+
+```ts
+import { createCaller } from "asagi";
+import { appRouter } from "./server";
+
+const caller = createCaller(appRouter);
+
+// POST /items
+const { data } = await caller.items.$post({
+  json: { name: "New Item" },
+});
+console.log(data); // { success: boolean }
+
+// GET /items/:id
+const { data, error } = await caller.items[":id"].$get({
+  params: { id: "item123" },
+});
+if (!error) {
+  console.log(data); // { item: Item }
 }
 ```
 
@@ -170,7 +192,7 @@ const appRouter = createRouter([
   }),
 ]);
 
-const server = createServer(appRouter, {
+export default createServer(appRouter, {
   transformers: [superjsonTransformer],
 });
 ```
@@ -183,9 +205,8 @@ const api = createClient<AppRouter, typeof superjsonTransformer>({
   transformer: superjsonTransformer,
 });
 
-const res = await api.now.$get();
-const body = await res.json();
-console.log(body.now); // Date object (deserialized by Superjson)
+const { data } = await api.now.$get();
+console.log(data.now); // Date object (deserialized by Superjson)
 ```
 
 Other clients (using standard JSON):
