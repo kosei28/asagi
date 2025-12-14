@@ -1,10 +1,10 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec';
 import type { Context } from './context';
-import type { MaybePromise } from './utils/types';
+import type { JSONValue, MaybePromise } from './utils/types';
 
 export type InputSchemas = {
-  json: StandardSchemaV1<any, any>;
-  form: StandardSchemaV1<any, any>;
+  json: StandardSchemaV1<JSONValue, any>;
+  form: StandardSchemaV1<Record<string, string | string[] | File | File[]>, any>;
   query: StandardSchemaV1<Record<string, string>, any>;
   params: StandardSchemaV1<Record<string, string>, any>;
 };
