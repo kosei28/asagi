@@ -44,6 +44,12 @@
   },
   "overrides": [
     {
+      "includes": ["**/test/**", "**/*.test.ts"],
+      "linter": {
+        "enabled": false
+      }
+    },
+    {
       "includes": ["example/**"],
       "linter": {
         "rules": {

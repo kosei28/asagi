@@ -33,6 +33,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "test": "tsc --noEmit && bun test",
     "check": "biome check --write"
   },
   "dependencies": {
@@ -40,7 +41,8 @@
     "rou3": "^0.7.11"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "zod": "^4.1.13"
   },
   "peerDependencies": {
     "typescript": "^5"

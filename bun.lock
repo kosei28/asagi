@@ -21,13 +21,14 @@
     },
     "packages/asagi": {
       "name": "asagi",
-      "version": "0.1.3",
+      "version": "0.1.4",
       "dependencies": {
         "@standard-schema/spec": "^1.0.0",
         "rou3": "^0.7.11",
       },
       "devDependencies": {
         "@types/bun": "latest",
+        "zod": "^4.1.13",
       },
       "peerDependencies": {
         "typescript": "^5",
