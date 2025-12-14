@@ -7,7 +7,7 @@ const defaultContentTypes: Record<OutputType, string | undefined> = {
   body: 'application/octet-stream',
 };
 
-export const ensureResponse = (result: Output, transformer: Transformer): Response => {
+export function ensureResponse(result: Output, transformer: Transformer): Response {
   if (result === undefined) {
     return new Response(null, { status: 204 });
   }
@@ -33,4 +33,4 @@ export const ensureResponse = (result: Output, transformer: Transformer): Respon
   }
 
   return new Response(result.body as OutputTypeMap[typeof result.type], responseInit);
-};
+}

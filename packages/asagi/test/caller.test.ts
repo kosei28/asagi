@@ -576,17 +576,27 @@ describe('createCaller', () => {
 
       const caller = createCaller(routes, { baseUrl: 'http://localhost' });
 
-      const _testPost = () => caller.users.$post({ json: { name: 'Alice' } });
-      const _testGet = () => caller.users[':id'].$get({ params: { id: '123' } });
+      function _testPost() {
+        return caller.users.$post({ json: { name: 'Alice' } });
+      }
+      function _testGet() {
+        return caller.users[':id'].$get({ params: { id: '123' } });
+      }
 
-      // @ts-expect-error - missing required json
-      const _testPostMissingJson = () => caller.users.$post({});
+      function _testPostMissingJson() {
+        // @ts-expect-error - missing required json
+        return caller.users.$post({});
+      }
 
-      // @ts-expect-error - missing required params
-      const _testGetMissingParams = () => caller.users[':id'].$get();
+      function _testGetMissingParams() {
+        // @ts-expect-error - missing required params
+        return caller.users[':id'].$get();
+      }
 
-      // @ts-expect-error - wrong type for name
-      const _testPostWrongType = () => caller.users.$post({ json: { name: 123 } });
+      function _testPostWrongType() {
+        // @ts-expect-error - wrong type for name
+        return caller.users.$post({ json: { name: 123 } });
+      }
 
       expect(true).toBe(true);
     });
@@ -595,10 +605,14 @@ describe('createCaller', () => {
       const app = createApp<{ userId: string }>();
       const routes = createRouter([app.get('/me').handle((c) => c.json({ userId: c.var.userId }))]);
 
-      // @ts-expect-error - missing required var
-      const _missingVar = () => createCaller(routes);
+      function _missingVar() {
+        // @ts-expect-error - missing required var
+        return createCaller(routes);
+      }
 
-      const _ok = () => createCaller(routes, { var: { userId: 'u1' } });
+      function _ok() {
+        return createCaller(routes, { var: { userId: 'u1' } });
+      }
       expect(true).toBe(true);
     });
   });

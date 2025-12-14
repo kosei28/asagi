@@ -10,12 +10,12 @@ declare module '../src/transformer' {
 }
 
 // Helper to create a fetch function from server for testing
-const createTestFetch = (server: Server) => {
+function createTestFetch(server: Server) {
   return ((url: string | URL | Request, init?: RequestInit) => {
     const request = url instanceof Request ? url : new Request(url, init);
     return server.fetch(request);
   }) as typeof fetch;
-};
+}
 
 describe('transformer', () => {
   describe('types', () => {

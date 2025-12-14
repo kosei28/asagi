@@ -56,12 +56,13 @@ export class MiddlewareBuilder<
   }
 }
 
-const isMiddlewareBuilder = (value: MiddlewareSource): value is MiddlewareBuilder<any, any, any, any> => {
+function isMiddlewareBuilder(value: MiddlewareSource): value is MiddlewareBuilder<any, any, any, any> {
   return (
     value instanceof MiddlewareBuilder ||
     (typeof value === 'object' && value !== null && Array.isArray((value as any).middlewares))
   );
-};
+}
 
-export const toMiddlewareList = (value: MiddlewareSource): Middleware<any, any, any, any>[] =>
-  isMiddlewareBuilder(value) ? (value as any).middlewares : [value];
+export function toMiddlewareList(value: MiddlewareSource): Middleware<any, any, any, any>[] {
+  return isMiddlewareBuilder(value) ? (value as any).middlewares : [value];
+}

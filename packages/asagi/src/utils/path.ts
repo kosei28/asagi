@@ -1,16 +1,16 @@
-const trimLeadingSlash = (value: string): string => {
+function trimLeadingSlash(value: string): string {
   return value.replace(/^\/+/, '');
-};
+}
 
-const trimTrailingSlash = (value: string): string => {
+function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, '');
-};
+}
 
-const _joinPath = (prefix: string, path: string): string => {
+function _joinPath(prefix: string, path: string): string {
   if (path.startsWith('/')) return `${prefix}${path}`;
   return `${prefix}/${path}`;
-};
+}
 
-export const joinPath = (prefix: string, path: string): string => {
+export function joinPath(prefix: string, path: string): string {
   return `/${trimLeadingSlash(trimTrailingSlash(_joinPath(prefix, path)))}`;
-};
+}

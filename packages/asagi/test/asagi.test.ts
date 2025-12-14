@@ -5,20 +5,20 @@ import { type AppBuilder, createApp, createRouter, createServer, type Server } f
 type AppPrefix<T> = T extends AppBuilder<any, any, infer Prefix, any, any> ? Prefix : never;
 
 // Helper function to create a request
-const req = (method: string, path: string, options?: RequestInit) => {
+function req(method: string, path: string, options?: RequestInit) {
   return new Request(`http://localhost${path}`, { method, ...options });
-};
+}
 
 // Helper function to create JSON request
-const jsonReq = (method: string, path: string, body: unknown) => {
+function jsonReq(method: string, path: string, body: unknown) {
   return req(method, path, {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-};
+}
 
 // Helper function to create form request
-const formReq = (method: string, path: string, data: Record<string, FormDataEntryValue | FormDataEntryValue[]>) => {
+function formReq(method: string, path: string, data: Record<string, FormDataEntryValue | FormDataEntryValue[]>) {
   const formData = new FormData();
   for (const [key, value] of Object.entries(data)) {
     if (Array.isArray(value)) {
@@ -28,7 +28,7 @@ const formReq = (method: string, path: string, data: Record<string, FormDataEntr
     }
   }
   return req(method, path, { body: formData });
-};
+}
 
 describe('App Builder', () => {
   describe('createApp', () => {
@@ -550,7 +550,7 @@ describe('Middleware Builder', () => {
 
 describe('Route Builder', () => {
   describe('HTTP Methods', () => {
-    const createMethodServer = (): Server => {
+    function createMethodServer(): Server {
       const app = createApp();
       const routes = createRouter([
         app.get('/resource').handle((c) => c.json({ method: 'GET' })),
@@ -562,7 +562,7 @@ describe('Route Builder', () => {
         app.on('OPTIONS', '/options').handle((c) => c.json({ method: 'OPTIONS' })),
       ]);
       return createServer(routes);
-    };
+    }
 
     it('should handle GET request', async () => {
       const server = createMethodServer();

@@ -1,11 +1,11 @@
 import type { InputBase } from './types';
 
-export const buildTemplatePath = (segments: string[]): string => {
+export function buildTemplatePath(segments: string[]): string {
   if (segments.length === 0) return '/';
   return `/${segments.join('/')}`;
-};
+}
 
-export const buildPath = (segments: string[], params?: Record<string, string>): string => {
+export function buildPath(segments: string[], params?: Record<string, string>): string {
   if (segments.length === 0) return '/';
   const parts = segments.map((segment) => {
     if (!segment.startsWith(':')) return segment;
@@ -17,9 +17,9 @@ export const buildPath = (segments: string[], params?: Record<string, string>): 
     return encodeURIComponent(value);
   });
   return `/${parts.join('/')}`;
-};
+}
 
-export const buildQueryString = (query?: Record<string, unknown>): string => {
+export function buildQueryString(query?: Record<string, unknown>): string {
   if (!query) return '';
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
@@ -32,13 +32,13 @@ export const buildQueryString = (query?: Record<string, unknown>): string => {
   }
   const qs = params.toString();
   return qs ? `?${qs}` : '';
-};
+}
 
-export const buildBody = (
+export function buildBody(
   input: InputBase | undefined,
   headers: Headers,
   requestInit?: RequestInit
-): BodyInit | undefined => {
+): BodyInit | undefined {
   if (requestInit?.body !== undefined && requestInit.body !== null) {
     return requestInit.body;
   }
@@ -64,13 +64,13 @@ export const buildBody = (
   }
 
   return requestInit?.body ?? undefined;
-};
+}
 
-export const buildUrl = (baseUrl: string | undefined, path: string, queryString: string): string => {
+export function buildUrl(baseUrl: string | undefined, path: string, queryString: string): string {
   return new URL(`${path}${queryString}`, baseUrl).toString();
-};
+}
 
-export const mergeRequestInit = (base?: RequestInit, override?: RequestInit): RequestInit => {
+export function mergeRequestInit(base?: RequestInit, override?: RequestInit): RequestInit {
   const headers = new Headers(base?.headers);
   const overrideHeaders = new Headers(override?.headers);
 
@@ -83,4 +83,4 @@ export const mergeRequestInit = (base?: RequestInit, override?: RequestInit): Re
     ...override,
     headers,
   };
-};
+}

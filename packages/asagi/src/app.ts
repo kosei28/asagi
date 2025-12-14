@@ -75,6 +75,6 @@ export class AppBuilder<
   }
 }
 
-export const createApp = <InitVar extends object = {}>(): AppBuilder<InitVar, InitVar, '', {}, never> => {
+export function createApp<InitVar extends object = {}>(): AppBuilder<InitVar, InitVar, '', {}, never> {
   return new AppBuilder('', []);
-};
+}

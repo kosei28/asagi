@@ -5,12 +5,12 @@ import { type BuiltRoute, createApp, createClient, createRouter, createServer, t
 import type { JSONParsed } from '../src/utils/types';
 
 // Helper to create a fetch function from server for testing
-const createTestFetch = (server: Server) => {
+function createTestFetch(server: Server) {
   return ((url: string | URL | Request, init?: RequestInit) => {
     const request = url instanceof Request ? url : new Request(url, init);
     return server.fetch(request);
   }) as typeof fetch;
-};
+}
 
 describe('createClient', () => {
   describe('basic usage', () => {
@@ -380,24 +380,36 @@ describe('createClient', () => {
         app.get('/users/:id').handle((c) => c.json({ id: c.params.id, name: 'User' })),
       ]);
 
-      const mockFetch = async () => new Response('{}');
+      async function mockFetch() {
+        return new Response('{}');
+      }
       const client = createClient<typeof routes>({
         baseUrl: 'http://localhost',
         fetch: mockFetch as any,
       });
 
       // Type checking - these should compile without errors (wrapped to prevent actual execution errors)
-      const _testPost = () => client.users.$post({ json: { name: 'Alice' } });
-      const _testGet = () => client.users[':id'].$get({ params: { id: '123' } });
+      function _testPost() {
+        return client.users.$post({ json: { name: 'Alice' } });
+      }
+      function _testGet() {
+        return client.users[':id'].$get({ params: { id: '123' } });
+      }
 
-      // @ts-expect-error - missing required json
-      const _testPostMissingJson = () => client.users.$post({});
+      function _testPostMissingJson() {
+        // @ts-expect-error - missing required json
+        return client.users.$post({});
+      }
 
-      // @ts-expect-error - missing required params
-      const _testGetMissingParams = () => client.users[':id'].$get();
+      function _testGetMissingParams() {
+        // @ts-expect-error - missing required params
+        return client.users[':id'].$get();
+      }
 
-      // @ts-expect-error - wrong type for name
-      const _testPostWrongType = () => client.users.$post({ json: { name: 123 } });
+      function _testPostWrongType() {
+        // @ts-expect-error - wrong type for name
+        return client.users.$post({ json: { name: 123 } });
+      }
 
       expect(true).toBe(true); // Dummy assertion for type-only test
     });

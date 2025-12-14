@@ -5,23 +5,23 @@ import type { BuiltRoute } from './route';
 import { jsonTransformer, TRANSFORMER_HEADER, type Transformer } from './transformer';
 import type { Handler, Middleware, Output } from './types';
 
-export const runChain = async (
+export async function runChain(
   stack: (Middleware<any, any, any, any> | Handler<any, any, any, any>)[],
   baseContext: { req: Request; params: Record<string, string>; var: any },
   transformer: Transformer
-): Promise<{ output?: Output; response: Response }> => {
+): Promise<{ output?: Output; response: Response }> {
   const context = new Context(baseContext.req, baseContext.params, baseContext.var, {});
   let output: Output;
 
-  const invoke = async (index: number): Promise<void> => {
+  async function invoke(index: number): Promise<void> {
     const current = stack[index];
     if (!current) {
       return;
     }
 
-    const next = async () => {
+    async function next() {
       await invoke(index + 1);
-    };
+    }
 
     const result = await (current as Middleware<any, any, any, any>)(context, next);
 
@@ -29,7 +29,7 @@ export const runChain = async (
       output = result;
       context.res = ensureResponse(result, transformer);
     }
-  };
+  }
 
   try {
     await invoke(0);
@@ -41,15 +41,15 @@ export const runChain = async (
     output: output,
     response: context.res,
   };
-};
+}
 
-const transformerFromHeader = (name: string | null, list: Transformer[]): Transformer => {
+function transformerFromHeader(name: string | null, list: Transformer[]): Transformer {
   if (name) {
     const found = list.find((t) => t.name === name);
     if (found) return found;
   }
   return list[0] ?? jsonTransformer;
-};
+}
 
 export type ServerOptions<InitVar extends object> = {
   basePath?: string;
@@ -81,7 +81,7 @@ export function createServer<R extends BuiltRoute<any, any, any, any, any, any>>
 
   const basePath = options?.basePath ?? '';
 
-  const fetch = async (req: Request): Promise<Response> => {
+  async function fetch(req: Request): Promise<Response> {
     const url = new URL(req.url);
     let pathname = url.pathname;
 
@@ -108,7 +108,7 @@ export function createServer<R extends BuiltRoute<any, any, any, any, any, any>>
       transformerFromHeader(req.headers.get(TRANSFORMER_HEADER), configuredTransformers)
     );
     return result.response;
-  };
+  }
 
   return { fetch };
 }

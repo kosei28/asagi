@@ -112,7 +112,7 @@ export type ClientOptions = {
   requestInit?: RequestInit;
 };
 
-const parseBody = async (response: Response, transformer: Transformer): Promise<unknown> => {
+async function parseBody(response: Response, transformer: Transformer): Promise<unknown> {
   const contentType = response.headers.get('content-type') ?? '';
 
   if (contentType.includes('application/json')) {
@@ -124,7 +124,7 @@ const parseBody = async (response: Response, transformer: Transformer): Promise<
   }
 
   return undefined;
-};
+}
 
 type NodeState = {
   baseUrl: string;
@@ -134,7 +134,7 @@ type NodeState = {
   requestInit?: RequestInit;
 };
 
-const createNode = (state: NodeState): any => {
+function createNode(state: NodeState): any {
   const target = (() => {}) as any;
 
   const handler: ProxyHandler<any> = {
@@ -183,9 +183,9 @@ const createNode = (state: NodeState): any => {
   };
 
   return new Proxy(target, handler);
-};
+}
 
-export const createClient = <
+export function createClient<
   Routes extends BuiltRoute<any, any, any, any, any, any>[],
   T extends Transformer = Transformer<'json'>,
 >(
@@ -193,7 +193,7 @@ export const createClient = <
 ): ClientFromRouter<
   Routes[number],
   T extends Transformer<infer Kind> ? (Kind extends keyof TransformKind ? Kind : never) : never
-> => {
+> {
   return createNode({
     baseUrl: options.baseUrl ? options.baseUrl.toString() : '',
     segments: [],
@@ -201,4 +201,4 @@ export const createClient = <
     fetch: options.fetch ?? globalThis.fetch,
     requestInit: options.requestInit,
   });
-};
+}

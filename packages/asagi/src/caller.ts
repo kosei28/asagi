@@ -54,19 +54,20 @@ type NodeState = {
   requestInit?: RequestInit;
 };
 
-const createNode = (state: NodeState): any => {
-  const target = (() => {}) as any;
+function findRouteByTemplate(
+  routes: BuiltRoute<any, any, any, any, any, any>[],
+  method: string,
+  templatePath: string
+): BuiltRoute<any, any, any, any, any, any> | null {
+  const upperMethod = method.toUpperCase();
+  const exact = routes.find((r) => r.path === templatePath && r.method.toUpperCase() === upperMethod);
+  if (exact) return exact;
+  const fallback = routes.find((r) => r.path === templatePath && r.method.toUpperCase() === 'ALL');
+  return fallback ?? null;
+}
 
-  const findRouteByTemplate = (
-    method: string,
-    templatePath: string
-  ): BuiltRoute<any, any, any, any, any, any> | null => {
-    const upperMethod = method.toUpperCase();
-    const exact = state.routes.find((r) => r.path === templatePath && r.method.toUpperCase() === upperMethod);
-    if (exact) return exact;
-    const fallback = state.routes.find((r) => r.path === templatePath && r.method.toUpperCase() === 'ALL');
-    return fallback ?? null;
-  };
+function createNode(state: NodeState): any {
+  const target = (() => {}) as any;
 
   const handler: ProxyHandler<any> = {
     get(_t, prop) {
@@ -94,7 +95,7 @@ const createNode = (state: NodeState): any => {
             body,
           });
 
-          const targetRoute = findRouteByTemplate(finalMethod, templatePath);
+          const targetRoute = findRouteByTemplate(state.routes, finalMethod, templatePath);
 
           if (!targetRoute) {
             throw new Error(`Route not found for ${finalMethod} ${templatePath}`);
@@ -127,7 +128,7 @@ const createNode = (state: NodeState): any => {
   };
 
   return new Proxy(target, handler);
-};
+}
 
 type InferInitVar<R> = R extends BuiltRoute<infer InitVar, any, any, any, any, any>[] ? InitVar : never;
 
