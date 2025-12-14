@@ -1,4 +1,4 @@
-import { createClient } from 'asagi';
+import { createClient } from '../src';
 import type { AppRouter } from './index';
 import { superjsonTransformer } from './transformer';
 

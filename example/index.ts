@@ -1,5 +1,5 @@
-import { createApp, createRouter } from 'asagi';
 import { z } from 'zod';
+import { createApp, createRouter, createServer } from '../src';
 import { superjsonTransformer } from './transformer';
 
 type User = {
@@ -90,7 +90,7 @@ const itemsRouter = createRouter([
   }),
 ]);
 
-const appRouter = createRouter({ transformers: [superjsonTransformer] }, [
+const appRouter = createRouter([
   app.get('/now').handle(async (c) => {
     return c.json({
       now: new Date(),
@@ -107,6 +107,8 @@ const appRouter = createRouter({ transformers: [superjsonTransformer] }, [
   itemsRouter,
 ]);
 
-export default appRouter;
+export default createServer(appRouter, {
+  transformers: [superjsonTransformer],
+});
 
 export type AppRouter = typeof appRouter;
