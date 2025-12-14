@@ -1,6 +1,8 @@
 import { describe, expect, expectTypeOf, it } from 'bun:test';
 import { z } from 'zod';
-import { createApp, createRouter, createServer, type Server } from '../src';
+import { type AppBuilder, createApp, createRouter, createServer, type Server } from '../src';
+
+type AppPrefix<T> = T extends AppBuilder<any, any, infer Prefix, any, any> ? Prefix : never;
 
 // Helper function to create a request
 const req = (method: string, path: string, options?: RequestInit) => {
@@ -43,10 +45,15 @@ describe('App Builder', () => {
     });
   });
 
-  describe('basePath', () => {
+  describe('path', () => {
     it('should set base path for routes', async () => {
       const app = createApp().basePath('/api');
-      const routes = createRouter([app.get('/users').handle((c) => c.json({ users: [] }))]);
+      expectTypeOf<AppPrefix<typeof app>>().toEqualTypeOf<'/api'>();
+
+      const route = app.get('/users').handle((c) => c.json({ users: [] }));
+      expectTypeOf<typeof route.path>().toEqualTypeOf<'/api/users'>();
+
+      const routes = createRouter([route]);
       const server = createServer(routes);
 
       const res = await server.fetch(req('GET', '/api/users'));
@@ -56,12 +63,221 @@ describe('App Builder', () => {
 
     it('should handle nested base paths', async () => {
       const app = createApp().basePath('/api').basePath('/v1');
-      const routes = createRouter([app.get('/items').handle((c) => c.json({ items: [] }))]);
+      expectTypeOf<AppPrefix<typeof app>>().toEqualTypeOf<'/api/v1'>();
+
+      const route = app.get('/items').handle((c) => c.json({ items: [] }));
+      expectTypeOf<typeof route.path>().toEqualTypeOf<'/api/v1/items'>();
+
+      const routes = createRouter([route]);
       const server = createServer(routes);
 
       const res = await server.fetch(req('GET', '/api/v1/items'));
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({ items: [] });
+    });
+
+    it('should normalize leading/trailing slashes in basePath', async () => {
+      const app = createApp().basePath('api/');
+      expectTypeOf<AppPrefix<typeof app>>().toEqualTypeOf<'/api'>();
+
+      const route = app.get('/users').handle((c) => c.json({ ok: true }));
+      expectTypeOf<typeof route.path>().toEqualTypeOf<'/api/users'>();
+
+      const routes = createRouter([route]);
+      const server = createServer(routes);
+
+      const res = await server.fetch(req('GET', '/api/users'));
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ ok: true });
+    });
+
+    it('should remove repeated trailing slashes in basePath', async () => {
+      const app = createApp().basePath('api///');
+      expectTypeOf<AppPrefix<typeof app>>().toEqualTypeOf<'/api'>();
+
+      const route = app.get('/users').handle((c) => c.json({ ok: true }));
+      expectTypeOf<typeof route.path>().toEqualTypeOf<'/api/users'>();
+
+      const routes = createRouter([route]);
+      const server = createServer(routes);
+
+      const ok = await server.fetch(req('GET', '/api/users'));
+      expect(ok.status).toBe(200);
+
+      const notFound = await server.fetch(req('GET', '/api///users'));
+      expect(notFound.status).toBe(404);
+    });
+
+    it('should join missing slash between nested basePaths', async () => {
+      const app = createApp().basePath('/api').basePath('v1');
+      expectTypeOf<AppPrefix<typeof app>>().toEqualTypeOf<'/api/v1'>();
+
+      const route = app.get('/items').handle((c) => c.json({ ok: true }));
+      expectTypeOf<typeof route.path>().toEqualTypeOf<'/api/v1/items'>();
+
+      const routes = createRouter([route]);
+      const server = createServer(routes);
+
+      const ok = await server.fetch(req('GET', '/api/v1/items'));
+      expect(ok.status).toBe(200);
+
+      const notFound = await server.fetch(req('GET', '/apiv1/items'));
+      expect(notFound.status).toBe(404);
+    });
+
+    it('should preserve repeated slashes inside basePath', async () => {
+      const app = createApp().basePath('/api//v1');
+      expectTypeOf<AppPrefix<typeof app>>().toEqualTypeOf<'/api//v1'>();
+
+      const route = app.get('/items').handle((c) => c.json({ ok: true }));
+      expectTypeOf<typeof route.path>().toEqualTypeOf<'/api//v1/items'>();
+
+      const routes = createRouter([route]);
+      const server = createServer(routes);
+
+      const ok = await server.fetch(req('GET', '/api//v1/items'));
+      expect(ok.status).toBe(200);
+
+      const notFound = await server.fetch(req('GET', '/api/v1/items'));
+      expect(notFound.status).toBe(404);
+    });
+
+    it('should treat basePath("/") as no-op', async () => {
+      const app = createApp().basePath('/');
+      expectTypeOf<AppPrefix<typeof app>>().toEqualTypeOf<'/'>();
+
+      const route = app.get('/users').handle((c) => c.json({ ok: true }));
+      expectTypeOf<typeof route.path>().toEqualTypeOf<'/users'>();
+
+      const routes = createRouter([route]);
+      const server = createServer(routes);
+
+      const res = await server.fetch(req('GET', '/users'));
+      expect(res.status).toBe(200);
+    });
+
+    it('should treat basePath("") as basePath("/")', async () => {
+      const app = createApp().basePath('');
+      expectTypeOf<AppPrefix<typeof app>>().toEqualTypeOf<'/'>();
+
+      const route = app.get('/users').handle((c) => c.json({ ok: true }));
+      expectTypeOf<typeof route.path>().toEqualTypeOf<'/users'>();
+
+      const routes = createRouter([route]);
+      const server = createServer(routes);
+
+      const res = await server.fetch(req('GET', '/users'));
+      expect(res.status).toBe(200);
+    });
+
+    it('should treat empty route path as "/"', async () => {
+      const app = createApp();
+      const rootRoute = app.get('').handle((c) => c.json({ ok: true }));
+      expectTypeOf<typeof rootRoute.path>().toEqualTypeOf<'/'>();
+
+      const apiApp = createApp().basePath('/api');
+      const apiRootRoute = apiApp.get('').handle((c) => c.json({ ok: true }));
+      expectTypeOf<typeof apiRootRoute.path>().toEqualTypeOf<'/api'>();
+
+      const routes = createRouter([rootRoute, apiRootRoute]);
+      const server = createServer(routes);
+
+      const rootRes = await server.fetch(req('GET', '/'));
+      expect(rootRes.status).toBe(200);
+
+      const apiRes = await server.fetch(req('GET', '/api'));
+      expect(apiRes.status).toBe(200);
+    });
+
+    it('should treat route path "/" as "/"', async () => {
+      const app = createApp();
+      const rootRoute = app.get('/').handle((c) => c.json({ ok: true }));
+      expectTypeOf<typeof rootRoute.path>().toEqualTypeOf<'/'>();
+
+      const apiApp = createApp().basePath('/api');
+      const apiRootRoute = apiApp.get('/').handle((c) => c.json({ ok: true }));
+      expectTypeOf<typeof apiRootRoute.path>().toEqualTypeOf<'/api'>();
+
+      const routes = createRouter([rootRoute, apiRootRoute]);
+      const server = createServer(routes);
+
+      const rootRes = await server.fetch(req('GET', '/'));
+      expect(rootRes.status).toBe(200);
+
+      const apiRes = await server.fetch(req('GET', '/api'));
+      expect(apiRes.status).toBe(200);
+    });
+
+    it('should normalize leading/trailing slashes in route path', async () => {
+      const app = createApp().basePath('/api');
+      const route = app.get('/users/').handle((c) => c.json({ ok: true }));
+      expectTypeOf<typeof route.path>().toEqualTypeOf<'/api/users'>();
+
+      const routes = createRouter([route]);
+      const server = createServer(routes);
+
+      const res = await server.fetch(req('GET', '/api/users'));
+      expect(res.status).toBe(200);
+    });
+
+    it('should remove repeated trailing slashes in route path', async () => {
+      const app = createApp().basePath('/api');
+      const route = app.get('/users///').handle((c) => c.json({ ok: true }));
+      expectTypeOf<typeof route.path>().toEqualTypeOf<'/api/users'>();
+
+      const routes = createRouter([route]);
+      const server = createServer(routes);
+
+      const ok = await server.fetch(req('GET', '/api/users'));
+      expect(ok.status).toBe(200);
+
+      const notFound = await server.fetch(req('GET', '/api/users///'));
+      expect(notFound.status).toBe(404);
+    });
+
+    it('should join missing slash between basePath and route path', async () => {
+      const app = createApp().basePath('/api');
+      const route = app.get('users').handle((c) => c.json({ ok: true }));
+      expectTypeOf<typeof route.path>().toEqualTypeOf<'/api/users'>();
+
+      const routes = createRouter([route]);
+      const server = createServer(routes);
+
+      const ok = await server.fetch(req('GET', '/api/users'));
+      expect(ok.status).toBe(200);
+
+      const notFound = await server.fetch(req('GET', '/apiusers'));
+      expect(notFound.status).toBe(404);
+    });
+
+    it('should preserve repeated slashes that become internal during concatenation', async () => {
+      const app = createApp().basePath('/api');
+      const route = app.get('///users').handle((c) => c.json({ ok: true }));
+      expectTypeOf<typeof route.path>().toEqualTypeOf<'/api///users'>();
+
+      const routes = createRouter([route]);
+      const server = createServer(routes);
+
+      const ok = await server.fetch(req('GET', '/api///users'));
+      expect(ok.status).toBe(200);
+
+      const notFound = await server.fetch(req('GET', '/api/users'));
+      expect(notFound.status).toBe(404);
+    });
+
+    it('should preserve repeated slashes inside route path', async () => {
+      const app = createApp().basePath('/api');
+      const route = app.get('/users//me/').handle((c) => c.json({ ok: true }));
+      expectTypeOf<typeof route.path>().toEqualTypeOf<'/api/users//me'>();
+
+      const routes = createRouter([route]);
+      const server = createServer(routes);
+
+      const ok = await server.fetch(req('GET', '/api/users//me'));
+      expect(ok.status).toBe(200);
+
+      const notFound = await server.fetch(req('GET', '/api/users/me'));
+      expect(notFound.status).toBe(404);
     });
   });
 
@@ -1107,6 +1323,30 @@ describe('createServer', () => {
       const res = await server.fetch(req('GET', '/api/users'));
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({ users: [] });
+    });
+
+    it('should require basePath option to match exactly (trailing slash)', async () => {
+      const app = createApp();
+      const routes = createRouter([app.get('/users').handle((c) => c.json({ ok: true }))]);
+      const server = createServer(routes, { basePath: '/api/' });
+
+      const notFound = await server.fetch(req('GET', '/api/users'));
+      expect(notFound.status).toBe(404);
+
+      const ok = await server.fetch(req('GET', '/api//users'));
+      expect(ok.status).toBe(200);
+    });
+
+    it('should not normalize the remaining path after stripping basePath option', async () => {
+      const app = createApp();
+      const routes = createRouter([app.get('/users').handle((c) => c.json({ ok: true }))]);
+      const server = createServer(routes, { basePath: '/api' });
+
+      const ok = await server.fetch(req('GET', '/api/users'));
+      expect(ok.status).toBe(200);
+
+      const notFound = await server.fetch(req('GET', '/api//users'));
+      expect(notFound.status).toBe(404);
     });
 
     it('should return 404 for requests without basePath', async () => {

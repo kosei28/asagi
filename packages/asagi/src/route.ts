@@ -7,8 +7,8 @@ import {
   toMiddlewareList,
 } from './middleware';
 import type { Handler, InputSchemas, Middleware, NewInputSchemas, Output, UpdateVar } from './types';
-import { normalizePath, trimTrailingSlash } from './utils/paths';
-import type { JoinPath, TrimTrailingSlash } from './utils/types';
+import { joinPath } from './utils/path';
+import type { JoinPath } from './utils/types';
 import { createInputValidator, type ValidatorOutput } from './validators';
 
 type InferHandlerOutput<T> = T extends Handler<any, any, any, infer O> ? (O extends void ? undefined : O) : never;
@@ -80,15 +80,15 @@ export class RouteBuilder<
   ): BuiltRoute<
     InitVar,
     Method,
-    TrimTrailingSlash<JoinPath<Prefix, Path>>,
+    JoinPath<Prefix, Path>,
     InferRouteParams<JoinPath<Prefix, Path>>,
     Input,
     O | InferHandlerOutput<H>
   > {
-    const fullPath = trimTrailingSlash(normalizePath(`${this.prefix}${this.path}`)) || '/';
+    const fullPath = joinPath(this.prefix, this.path) || '/';
     return {
       method: this.method,
-      path: fullPath as TrimTrailingSlash<JoinPath<Prefix, Path>>,
+      path: fullPath as JoinPath<Prefix, Path>,
       middlewares: this.middlewares,
       handler,
     };

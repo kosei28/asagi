@@ -9,8 +9,8 @@ import {
 } from './middleware';
 import { RouteBuilder } from './route';
 import type { InputSchemas, Middleware, NewInputSchemas, Output, UpdateVar } from './types';
-import { normalizePath, trimTrailingSlash } from './utils/paths';
-import type { JoinPath, TrimTrailingSlash } from './utils/types';
+import { joinPath } from './utils/path';
+import type { JoinPath } from './utils/types';
 import { createInputValidator, type ValidatorOutput } from './validators';
 
 export class AppBuilder<
@@ -29,13 +29,8 @@ export class AppBuilder<
     return new AppBuilder(this.prefix, this.middlewares);
   }
 
-  basePath<Path extends string>(
-    path: Path
-  ): AppBuilder<InitVar, Var, TrimTrailingSlash<JoinPath<Prefix, Path>>, Input, O> {
-    return new AppBuilder(
-      trimTrailingSlash(normalizePath(`${this.prefix}${path}`)) as TrimTrailingSlash<JoinPath<Prefix, Path>>,
-      this.middlewares
-    );
+  basePath<Path extends string>(path: Path): AppBuilder<InitVar, Var, JoinPath<Prefix, Path>, Input, O> {
+    return new AppBuilder(joinPath(this.prefix, path) as JoinPath<Prefix, Path>, this.middlewares);
   }
 
   use<M extends MiddlewareSource = Middleware<Var, InferRouteParams<Prefix>, Input, any>>(

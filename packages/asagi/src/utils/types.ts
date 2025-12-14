@@ -1,10 +1,12 @@
 export type MaybePromise<T> = T | Promise<T>;
 
-export type JoinPath<A extends string, B extends string> = `${A}${B}` extends `//${infer Rest}`
-  ? `/${Rest}`
-  : `${A}${B}`;
+type TrimLeadingSlash<T extends string> = T extends `/${infer Rest}` ? TrimLeadingSlash<Rest> : T;
 
-export type TrimTrailingSlash<T extends string> = T extends `${infer Body}/` ? Body : T;
+type TrimTrailingSlash<T extends string> = T extends `${infer Rest}/` ? TrimTrailingSlash<Rest> : T;
+
+type _JoinPath<A extends string, B extends string> = B extends `/${string}` ? `${A}${B}` : `${A}/${B}`;
+
+export type JoinPath<A extends string, B extends string> = `/${TrimLeadingSlash<TrimTrailingSlash<_JoinPath<A, B>>>}`;
 
 export type Enumerate<N extends number, Acc extends number[] = []> = Acc['length'] extends N
   ? Acc[number]
