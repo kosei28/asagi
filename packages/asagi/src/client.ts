@@ -50,15 +50,19 @@ export type TypedResponse<O, Kind extends keyof TransformKind> = O extends Typed
 type ClientResult<O, Kind extends keyof TransformKind> = O extends TypedOutput<infer Type, any, infer Status>
   ? Type extends 'body'
     ? {
-        data: undefined;
-        error: undefined;
+        data: Status extends OkStatuses ? unknown : undefined;
+        error: Status extends OkStatuses ? undefined : unknown;
         status: Status;
         ok: Status extends OkStatuses ? true : false;
         res: TypedResponse<O, Kind>;
       }
-    : Status extends OkStatuses
-      ? { data: BodyOfOutput<O>; error: undefined; status: Status; ok: true; res: TypedResponse<O, Kind> }
-      : { data: undefined; error: BodyOfOutput<O>; status: Status; ok: false; res: TypedResponse<O, Kind> }
+    : {
+        data: Status extends OkStatuses ? BodyOfOutput<O> : undefined;
+        error: Status extends OkStatuses ? undefined : BodyOfOutput<O>;
+        status: Status;
+        ok: Status extends OkStatuses ? true : false;
+        res: TypedResponse<O, Kind>;
+      }
   : { data: unknown; error: unknown; status: number; ok: boolean; res: Response };
 
 type RequestFn<

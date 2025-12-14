@@ -662,7 +662,7 @@ describe('createClient', () => {
       expect(ok).toBe(true);
       expect(data).toBeUndefined();
       expect(error).toBeUndefined();
-      expectTypeOf(data).toEqualTypeOf<undefined>();
+      expectTypeOf(data).toEqualTypeOf<unknown>();
       expectTypeOf(error).toEqualTypeOf<undefined>();
       expectTypeOf(ok).toEqualTypeOf<true>();
       expectTypeOf(status).toEqualTypeOf<204>();
@@ -670,11 +670,26 @@ describe('createClient', () => {
   });
 
   describe('response typing edge cases', () => {
-    it('should type data/error as undefined for c.body() output (any status)', async () => {
+    it('should type data/error as unknown for c.body() output and parse based on content-type', async () => {
       const app = createApp();
       const routes = createRouter([
         app.get('/binary').handle((c) => c.body(new Uint8Array([1, 2, 3]))),
-        app.get('/binary-error').handle((c) => c.body(new Uint8Array([4, 5, 6]), 418)),
+        app.get('/json').handle((c) =>
+          c.body(JSON.stringify({ hello: 'world' }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          })
+        ),
+        app
+          .get('/text')
+          .handle((c) => c.body('Hello, World!', { status: 200, headers: { 'content-type': 'text/plain' } })),
+        app.get('/binary-error').handle((c) => c.body(new Uint8Array([4, 5, 6]), 400)),
+        app.get('/json-error').handle((c) =>
+          c.body(JSON.stringify({ error: 'bad' }), {
+            status: 400,
+            headers: { 'content-type': 'application/json' },
+          })
+        ),
       ]);
       const server = createServer(routes);
 
@@ -683,25 +698,35 @@ describe('createClient', () => {
         fetch: createTestFetch(server),
       });
 
-      const okResult = await client.binary.$get();
-      expect(okResult.data).toBeUndefined();
-      expect(okResult.error).toBeUndefined();
-      expect(okResult.status).toBe(200);
-      expect(okResult.ok).toBe(true);
-      expectTypeOf(okResult.data).toEqualTypeOf<undefined>();
-      expectTypeOf(okResult.error).toEqualTypeOf<undefined>();
-      expectTypeOf(okResult.status).toEqualTypeOf<200>();
-      expectTypeOf(okResult.ok).toEqualTypeOf<true>();
+      const binaryResult = await client.binary.$get();
+      expectTypeOf(binaryResult.data).toEqualTypeOf<unknown>();
+      expectTypeOf(binaryResult.error).toEqualTypeOf<undefined>();
+      expect(binaryResult.data).toBeUndefined();
+      expect(binaryResult.error).toBeUndefined();
 
-      const errorResult = await client['binary-error'].$get();
-      expect(errorResult.data).toBeUndefined();
-      expect(errorResult.error).toBeUndefined();
-      expect(errorResult.status).toBe(418);
-      expect(errorResult.ok).toBe(false);
-      expectTypeOf(errorResult.data).toEqualTypeOf<undefined>();
-      expectTypeOf(errorResult.error).toEqualTypeOf<undefined>();
-      expectTypeOf(errorResult.status).toEqualTypeOf<418>();
-      expectTypeOf(errorResult.ok).toEqualTypeOf<false>();
+      const jsonResult = await client.json.$get();
+      expectTypeOf(jsonResult.data).toEqualTypeOf<unknown>();
+      expectTypeOf(jsonResult.error).toEqualTypeOf<undefined>();
+      expect(jsonResult.data).toEqual({ hello: 'world' });
+      expect(jsonResult.error).toBeUndefined();
+
+      const textResult = await client.text.$get();
+      expectTypeOf(textResult.data).toEqualTypeOf<unknown>();
+      expectTypeOf(textResult.error).toEqualTypeOf<undefined>();
+      expect(textResult.data).toBe('Hello, World!');
+      expect(textResult.error).toBeUndefined();
+
+      const binaryErrorResult = await client['binary-error'].$get();
+      expectTypeOf(binaryErrorResult.data).toEqualTypeOf<undefined>();
+      expectTypeOf(binaryErrorResult.error).toEqualTypeOf<unknown>();
+      expect(binaryErrorResult.data).toBeUndefined();
+      expect(binaryErrorResult.error).toBeUndefined();
+
+      const jsonErrorResult = await client['json-error'].$get();
+      expectTypeOf(jsonErrorResult.data).toEqualTypeOf<undefined>();
+      expectTypeOf(jsonErrorResult.error).toEqualTypeOf<unknown>();
+      expect(jsonErrorResult.data).toBeUndefined();
+      expect(jsonErrorResult.error).toEqual({ error: 'bad' });
     });
 
     it('should type data/error as unknown for raw Response output (and parse only json/text at runtime)', async () => {
