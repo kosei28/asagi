@@ -49,11 +49,17 @@ export type TypedResponse<O, Kind extends keyof TransformKind> = O extends Typed
 
 type ClientResult<O, Kind extends keyof TransformKind> = O extends TypedOutput<infer Type, any, infer Status>
   ? Type extends 'body'
-    ? { data: undefined; error: undefined; res: TypedResponse<O, Kind> }
+    ? {
+        data: undefined;
+        error: undefined;
+        status: Status;
+        ok: Status extends OkStatuses ? true : false;
+        res: TypedResponse<O, Kind>;
+      }
     : Status extends OkStatuses
-      ? { data: BodyOfOutput<O>; error: undefined; res: TypedResponse<O, Kind> }
-      : { data: undefined; error: BodyOfOutput<O>; res: TypedResponse<O, Kind> }
-  : { data: unknown; error: unknown; res: Response };
+      ? { data: BodyOfOutput<O>; error: undefined; status: Status; ok: true; res: TypedResponse<O, Kind> }
+      : { data: undefined; error: BodyOfOutput<O>; status: Status; ok: false; res: TypedResponse<O, Kind> }
+  : { data: unknown; error: unknown; status: number; ok: boolean; res: Response };
 
 type RequestFn<
   R extends BuiltRoute<any, any, any, any, any, any>,
@@ -166,8 +172,8 @@ const createNode = (state: NodeState): any => {
           const parsedBody = await parseBody(response.clone(), state.transformer);
 
           return response.status >= 200 && response.status < 300
-            ? { data: parsedBody, error: undefined, res: wrapped }
-            : { data: undefined, error: parsedBody, res: wrapped };
+            ? { data: parsedBody, status: response.status, ok: true, res: wrapped }
+            : { error: parsedBody, status: response.status, ok: false, res: wrapped };
         };
       }
 
