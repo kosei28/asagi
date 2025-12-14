@@ -7,9 +7,10 @@ import {
   type MiddlewareSource,
   toMiddlewareList,
 } from './middleware';
-import { type JoinPath, RouteBuilder, type TrimTrailingSlash } from './route';
+import { RouteBuilder } from './route';
 import type { InputSchemas, Middleware, Output, UpdateVar } from './types';
 import { normalizePath, trimTrailingSlash } from './utils/paths';
+import type { JoinPath, TrimTrailingSlash } from './utils/types';
 import { createInputValidator, type ValidatorOutput } from './validators';
 
 export class AppBuilder<

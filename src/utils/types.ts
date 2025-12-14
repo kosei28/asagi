@@ -1,5 +1,11 @@
 export type MaybePromise<T> = T | Promise<T>;
 
+export type JoinPath<A extends string, B extends string> = `${A}${B}` extends `//${infer Rest}`
+  ? `/${Rest}`
+  : `${A}${B}`;
+
+export type TrimTrailingSlash<T extends string> = T extends `${infer Body}/` ? Body : T;
+
 export type Enumerate<N extends number, Acc extends number[] = []> = Acc['length'] extends N
   ? Acc[number]
   : Enumerate<N, [...Acc, Acc['length']]>;

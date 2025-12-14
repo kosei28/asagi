@@ -8,15 +8,10 @@ import {
 } from './middleware';
 import type { Handler, InputSchemas, Middleware, Output, UpdateVar } from './types';
 import { normalizePath, trimTrailingSlash } from './utils/paths';
+import type { JoinPath, TrimTrailingSlash } from './utils/types';
 import { createInputValidator, type ValidatorOutput } from './validators';
 
-export type JoinPath<A extends string, B extends string> = `${A}${B}` extends `//${infer Rest}`
-  ? `/${Rest}`
-  : `${A}${B}`;
-
-export type TrimTrailingSlash<T extends string> = T extends `${infer Body}/` ? Body : T;
-
-export type InferHandlerOutput<T> =
+type InferHandlerOutput<T> =
   T extends Handler<any, any, any, infer O> ? (O extends void | undefined ? Response : O) : never;
 
 export type BuiltRoute<
