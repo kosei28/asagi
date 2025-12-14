@@ -16,7 +16,7 @@ const jsonReq = (method: string, path: string, body: unknown) => {
 };
 
 // Helper function to create form request
-const formReq = (method: string, path: string, data: Record<string, string>) => {
+const formReq = (method: string, path: string, data: Record<string, FormDataEntryValue>) => {
   const formData = new FormData();
   for (const [key, value] of Object.entries(data)) {
     formData.append(key, value);
@@ -495,6 +495,29 @@ describe('Route Builder', () => {
       expect(await res.json()).toEqual({ username: 'admin' });
     });
 
+    it('should validate form data with File', async () => {
+      const app = createApp();
+      const routes = createRouter([
+        app
+          .post('/upload')
+          .input({ form: z.object({ file: z.file() }) })
+          .handle((c) =>
+            c.json({
+              name: c.input.form.file.name,
+              size: c.input.form.file.size,
+              type: c.input.form.file.type.split(';')[0],
+            })
+          ),
+      ]);
+      const server = createServer(routes);
+
+      const file = new File(['hello'], 'hello.txt', { type: 'text/plain' });
+      const res = await server.fetch(formReq('POST', '/upload', { file }));
+      const body = await res.json();
+      expect(body).toEqual({ name: 'hello.txt', size: 5, type: 'text/plain' });
+      expect(body.type).toMatch(/^text\/plain/);
+    });
+
     it('should return 400 for invalid json input', async () => {
       const app = createApp();
       const routes = createRouter([
@@ -716,9 +739,7 @@ describe('Context', () => {
         resBodyAfterNext = await c.res.clone().text();
       });
 
-      const routes = createRouter([
-        app.get('/test').handle((c) => c.json({ message: 'Hello' }, 201)),
-      ]);
+      const routes = createRouter([app.get('/test').handle((c) => c.json({ message: 'Hello' }, 201))]);
       const server = createServer(routes);
 
       await server.fetch(req('GET', '/test'));
@@ -740,9 +761,7 @@ describe('Context', () => {
         resHeaderAfterNext = c.res.headers.get('X-Middleware');
       });
 
-      const routes = createRouter([
-        app.get('/test').handle((c) => c.json({ handler: true }, 200)),
-      ]);
+      const routes = createRouter([app.get('/test').handle((c) => c.json({ handler: true }, 200))]);
       const server = createServer(routes);
 
       const res = await server.fetch(req('GET', '/test'));
@@ -790,9 +809,7 @@ describe('Context', () => {
         });
       });
 
-      const routes = createRouter([
-        app.get('/test').handle((c) => c.json({ original: true })),
-      ]);
+      const routes = createRouter([app.get('/test').handle((c) => c.json({ original: true }))]);
       const server = createServer(routes);
 
       const res = await server.fetch(req('GET', '/test'));

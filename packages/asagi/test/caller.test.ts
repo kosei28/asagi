@@ -178,6 +178,16 @@ describe('createCaller', () => {
         .post('/login')
         .input({ form: z.object({ username: z.string(), password: z.string() }) })
         .handle((c) => c.json({ username: c.input.form.username })),
+      app
+        .post('/upload')
+        .input({ form: z.object({ file: z.file() }) })
+        .handle((c) =>
+          c.json({
+            name: c.input.form.file.name,
+            size: c.input.form.file.size,
+            type: c.input.form.file.type.split(';')[0],
+          })
+        ),
     ]);
     const caller = createCaller(routes, { baseUrl: 'http://localhost' });
 
@@ -187,6 +197,14 @@ describe('createCaller', () => {
       });
       expect(error).toBeUndefined();
       expect(data).toEqual({ username: 'admin' });
+    });
+
+    it('should send form data with File', async () => {
+      const file = new File(['hello'], 'hello.txt', { type: 'text/plain' });
+      const { data, error } = await caller.upload.$post({ form: { file } });
+      expect(error).toBeUndefined();
+      expect(data).toEqual({ name: 'hello.txt', size: 5, type: 'text/plain' });
+      expect(data!.type).toMatch(/^text\/plain/);
     });
   });
 
