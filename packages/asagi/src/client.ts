@@ -32,6 +32,8 @@ export type OutputForRoute<R> = R extends BuiltRoute<any, any, any, any, any, in
 
 export type OkStatuses = IntRange<200, 300>;
 
+export type ErrorStatuses = IntRange<400, 600>;
+
 export type BodyOfOutput<O> = O extends TypedOutput<any, infer Body, any> ? Body : never;
 
 export type TypedResponse<O, Kind extends keyof TransformKind> = O extends TypedOutput<
@@ -51,14 +53,14 @@ type ClientResult<O, Kind extends keyof TransformKind> = O extends TypedOutput<i
   ? Type extends 'body'
     ? {
         data: Status extends OkStatuses ? unknown : undefined;
-        error: Status extends OkStatuses ? undefined : unknown;
+        error: Status extends ErrorStatuses ? unknown : undefined;
         status: Status;
         ok: Status extends OkStatuses ? true : false;
         res: TypedResponse<O, Kind>;
       }
     : {
         data: Status extends OkStatuses ? BodyOfOutput<O> : undefined;
-        error: Status extends OkStatuses ? undefined : BodyOfOutput<O>;
+        error: Status extends ErrorStatuses ? BodyOfOutput<O> : undefined;
         status: Status;
         ok: Status extends OkStatuses ? true : false;
         res: TypedResponse<O, Kind>;
@@ -175,9 +177,16 @@ function createNode(state: NodeState): any {
 
           const parsedBody = await parseBody(response.clone(), state.transformer);
 
-          return response.status >= 200 && response.status < 300
-            ? { data: parsedBody, status: response.status, ok: true, res: wrapped }
-            : { error: parsedBody, status: response.status, ok: false, res: wrapped };
+          const ok = response.status >= 200 && response.status < 300;
+          const isError = response.status >= 400 && response.status < 600;
+
+          return {
+            data: ok ? parsedBody : undefined,
+            error: isError ? parsedBody : undefined,
+            status: response.status,
+            ok,
+            res: wrapped,
+          };
         };
       }
 
