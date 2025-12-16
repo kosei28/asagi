@@ -193,12 +193,14 @@ function createNode(state: NodeState): any {
             body,
           });
 
-          const wrapped: any = Object.create(response, {
-            status: { get: () => response.status },
-            ok: { get: () => response.ok },
-            headers: { get: () => response.headers },
-            json: { value: async () => state.transformer.parse(await response.clone().text()) },
-            text: { value: () => response.text() },
+          const wrapped = new Proxy(response, {
+            get(target, prop) {
+              if (prop === 'json') {
+                return async () => state.transformer.parse(await target.clone().text());
+              }
+              const value = Reflect.get(target, prop, target);
+              return typeof value === 'function' ? value.bind(target) : value;
+            },
           });
 
           const parsedBody = await parseBody(response.clone(), state.transformer);
