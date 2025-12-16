@@ -1,4 +1,5 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec';
+import { parse } from 'cookie';
 import type { InputSchemas, Middleware, ParsedInput, TypedOutput } from './types';
 
 async function parseJsonBody(req: Request): Promise<unknown> {
@@ -37,6 +38,20 @@ function parseQuery(req: Request): Record<string, string> {
   for (const [key, value] of params.entries()) {
     result[key] = value;
   }
+  return result;
+}
+
+function parseHeaders(req: Request): Record<string, string> {
+  const result: Record<string, string> = {};
+  req.headers.forEach((value, key) => {
+    result[key] = value;
+  });
+  return result;
+}
+
+function parseCookies(req: Request): Record<string, string | undefined> {
+  const cookieHeader = req.headers.get('Cookie');
+  const result = parse(cookieHeader || '');
   return result;
 }
 
@@ -89,6 +104,14 @@ export function createInputValidator<S extends InputSchemas>(
 
     if (schemas.params) {
       await tryValidate('params', c.params);
+    }
+
+    if (schemas.headers) {
+      await tryValidate('headers', parseHeaders(c.req));
+    }
+
+    if (schemas.cookie) {
+      await tryValidate('cookie', parseCookies(c.req));
     }
 
     if (issues.length > 0) {

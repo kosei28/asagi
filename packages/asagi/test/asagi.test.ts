@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'bun:test';
 import { z } from 'zod';
-import { type AppBuilder, createApp, createRouter, createServer, type Server } from '../src';
+import { type AppBuilder, type BuiltRoute, createApp, createRouter, createServer, type Server } from '../src';
 
 type AppPrefix<T> = T extends AppBuilder<any, any, infer Prefix, any, any> ? Prefix : never;
 
@@ -778,6 +778,102 @@ describe('Route Builder', () => {
       });
     });
 
+    it('should validate headers', async () => {
+      const app = createApp();
+      const routes = createRouter([
+        app
+          .get('/headers')
+          .input({ headers: z.object({ 'x-api-key': z.string() }) })
+          .handle((c) => c.json({ apiKey: c.input.headers['x-api-key'] })),
+      ]);
+      const server = createServer(routes);
+
+      const res = await server.fetch(req('GET', '/headers', { headers: { 'x-api-key': 'secret' } }));
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ apiKey: 'secret' });
+
+      const invalidRes = await server.fetch(req('GET', '/headers'));
+      expect(invalidRes.status).toBe(400);
+    });
+
+    it('should validate cookies', async () => {
+      const app = createApp();
+      const routes = createRouter([
+        app
+          .get('/cookies')
+          .input({ cookie: z.object({ session: z.string() }) })
+          .handle((c) => c.json({ session: c.input.cookie.session })),
+      ]);
+      const server = createServer(routes);
+
+      const res = await server.fetch(req('GET', '/cookies', { headers: { Cookie: 'session=abc' } }));
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ session: 'abc' });
+
+      const invalidRes = await server.fetch(req('GET', '/cookies'));
+      expect(invalidRes.status).toBe(400);
+    });
+
+    it('should expose input schemas in BuiltRoute', () => {
+      const app = createApp();
+      const schema = {
+        json: z.object({ name: z.string() }),
+        headers: z.object({ 'x-header': z.string() }),
+        cookie: z.object({ session: z.string() }),
+      };
+
+      const route = app
+        .post('/schema')
+        .input(schema)
+        .handle((c) => c.json({}));
+
+      expect(route.inputSchemas).toBeDefined();
+      expect(route.inputSchemas.json).toBeDefined();
+      expect(route.inputSchemas.headers).toBeDefined();
+      expect(route.inputSchemas.cookie).toBeDefined();
+
+      // Check if schemas are preserved (loose check as they are Zod schemas)
+      expectTypeOf(route).toMatchTypeOf<BuiltRoute<any, any, any, any, typeof schema, any>>();
+    });
+
+    it('should expose input schemas from MiddlewareBuilder', () => {
+      const app = createApp();
+      const middleware = app.createMiddleware().input({
+        query: z.object({ page: z.string() }),
+      });
+
+      const route = app
+        .use(middleware)
+        .get('/test')
+        .handle((c) => c.json({ ok: true }));
+
+      expect(route.inputSchemas).toBeDefined();
+      expect(route.inputSchemas.query).toBeDefined();
+    });
+
+    it('should merge input schemas from multiple sources', () => {
+      const app = createApp().input({
+        headers: z.object({ auth: z.string() }),
+      });
+
+      const middleware = app.createMiddleware().input({
+        query: z.object({ page: z.string() }),
+      });
+
+      const route = app
+        .use(middleware)
+        .get('/test')
+        .input({
+          json: z.object({ body: z.string() }),
+        })
+        .handle((c) => c.json({ ok: true }));
+
+      expect(route.inputSchemas).toBeDefined();
+      expect(route.inputSchemas.headers).toBeDefined();
+      expect(route.inputSchemas.query).toBeDefined();
+      expect(route.inputSchemas.json).toBeDefined();
+    });
+
     it('should return 400 for invalid json input', async () => {
       const app = createApp();
       const routes = createRouter([
@@ -890,7 +986,7 @@ describe('Route Builder', () => {
       app.get('/').input(z.object({ q: z.string() }));
 
       // @ts-expect-error unknown schema key should be rejected
-      app.get('/').input({ headers: z.object({ 'x-test': z.string() }) });
+      app.get('/').input({ unknown: z.object({ 'x-test': z.string() }) });
 
       // @ts-expect-error cannot set both json and form at the same time
       app.post('/').input({ json: z.object({ ok: z.boolean() }), form: z.object({ ok: z.string() }) });
@@ -948,6 +1044,18 @@ describe('Route Builder', () => {
 
       // @ts-expect-error form schema input values must be string/string[]/File/File[] (no nested objects)
       app.post('/upload').input({ form: z.object({ meta: z.object({ a: z.string() }) }) });
+
+      // @ts-expect-error headers schema input values must be strings
+      app.get('/').input({ headers: z.object({ 'x-key': z.number() }) });
+
+      // @ts-expect-error headers schema input must be Record<string, string>
+      app.get('/').input({ headers: z.string() });
+
+      // @ts-expect-error cookie schema input values must be strings
+      app.get('/').input({ cookie: z.object({ session: z.number() }) });
+
+      // @ts-expect-error cookie schema input must be Record<string, string>
+      app.get('/').input({ cookie: z.string() });
     });
   });
 

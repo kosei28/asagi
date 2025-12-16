@@ -33,10 +33,13 @@ export class MiddlewareBuilder<
   Input extends InputSchemas,
   O extends Output,
 > {
-  constructor(private readonly middlewares: Middleware<any, any, any, any>[]) {}
+  constructor(
+    private readonly middlewares: Middleware<any, any, any, any>[],
+    private readonly inputSchemas: InputSchemas
+  ) {}
 
   $var<NewVar extends object>(): MiddlewareBuilder<UpdateVar<Var, NewVar>, Params, Input, O> {
-    return new MiddlewareBuilder(this.middlewares);
+    return new MiddlewareBuilder(this.middlewares, this.inputSchemas);
   }
 
   use<M extends MiddlewareSource = Middleware<Var, Params, Input, any>>(
@@ -47,12 +50,21 @@ export class MiddlewareBuilder<
     Input & InferMiddlewareInput<M>,
     O | InferMiddlewareOutput<M>
   > {
-    return new MiddlewareBuilder([...this.middlewares, ...toMiddlewareList(middleware)]);
+    const resolved = resolveMiddleware(middleware);
+
+    return new MiddlewareBuilder([...this.middlewares, ...resolved.middlewares], {
+      ...this.inputSchemas,
+      ...resolved.inputSchemas,
+    });
   }
 
   input<S extends NewInputSchemas<Input>>(schemas: S): MiddlewareBuilder<Var, Params, Input & S, O | ValidatorOutput> {
     const validator = createInputValidator(schemas);
-    return new MiddlewareBuilder([...this.middlewares, validator]);
+
+    return new MiddlewareBuilder([...this.middlewares, validator], {
+      ...this.inputSchemas,
+      ...schemas,
+    });
   }
 }
 
@@ -63,6 +75,18 @@ function isMiddlewareBuilder(value: MiddlewareSource): value is MiddlewareBuilde
   );
 }
 
-export function toMiddlewareList(value: MiddlewareSource): Middleware<any, any, any, any>[] {
-  return isMiddlewareBuilder(value) ? (value as any).middlewares : [value];
+export function resolveMiddleware(value: MiddlewareSource): {
+  middlewares: Middleware<any, any, any, any>[];
+  inputSchemas: InputSchemas;
+} {
+  if (isMiddlewareBuilder(value)) {
+    return {
+      middlewares: (value as any).middlewares,
+      inputSchemas: (value as any).inputSchemas,
+    };
+  }
+  return {
+    middlewares: [value],
+    inputSchemas: {},
+  };
 }

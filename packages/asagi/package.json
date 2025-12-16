@@ -38,6 +38,7 @@
   },
   "dependencies": {
     "@standard-schema/spec": "^1.0.0",
+    "cookie": "^1.1.1",
     "rou3": "^0.7.11"
   },
   "devDependencies": {

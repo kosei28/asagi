@@ -7,6 +7,8 @@ export type InputBase = {
   form: Record<string, FormValue>;
   query: Record<string, string>;
   params: Record<string, string>;
+  headers: Record<string, string>;
+  cookie: Record<string, string>;
 };
 
 export type InputSchemas = {
@@ -16,6 +18,8 @@ export type InputSchemas = {
 type InputSchemasWithoutBody = {
   query?: InputSchemas['query'];
   params?: InputSchemas['params'];
+  headers?: InputSchemas['headers'];
+  cookie?: InputSchemas['cookie'];
 };
 
 type InputSchemasWithJson = InputSchemasWithoutBody & {
