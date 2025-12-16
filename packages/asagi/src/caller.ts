@@ -8,7 +8,15 @@ import type {
   RouteTree,
   TypedResponse,
 } from './client';
-import { buildBody, buildPath, buildQueryString, buildTemplatePath, buildUrl, mergeRequestInit } from './request';
+import {
+  buildBody,
+  buildHeaders,
+  buildPath,
+  buildQueryString,
+  buildTemplatePath,
+  buildUrl,
+  mergeRequestInit,
+} from './request';
 import type { BuiltRoute } from './route';
 import { runChain } from './server';
 import { jsonTransformer } from './transformer';
@@ -98,6 +106,7 @@ function createNode(state: NodeState): any {
           const urlString = buildUrl(state.baseUrl, path, queryString);
           const mergedInit = mergeRequestInit(state.requestInit, requestInit);
           const headers = new Headers(mergedInit.headers);
+          buildHeaders(headers, input);
           const body = buildBody(input, headers, mergedInit);
           const finalMethod = method === 'ALL' ? (mergedInit.method ?? 'GET') : method;
 

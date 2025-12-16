@@ -1,5 +1,5 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec';
-import { buildBody, buildPath, buildQueryString, buildUrl, mergeRequestInit } from './request';
+import { buildBody, buildHeaders, buildPath, buildQueryString, buildUrl, mergeRequestInit } from './request';
 import type { BuiltRoute } from './route';
 import {
   jsonTransformer,
@@ -182,6 +182,7 @@ function createNode(state: NodeState): any {
           const urlString = buildUrl(state.baseUrl, path, queryString);
           const mergedInit = mergeRequestInit(state.requestInit, requestInit);
           const headers = new Headers(mergedInit.headers);
+          buildHeaders(headers, input);
           headers.set(TRANSFORMER_HEADER, state.transformer.name);
           const body = buildBody(input, headers, mergedInit);
           const finalMethod = method === 'ALL' ? (mergedInit.method ?? 'GET') : method;

@@ -240,6 +240,37 @@ describe('createCaller', () => {
     });
   });
 
+  describe('headers and cookies', () => {
+    const app = createApp();
+    const routes = createRouter([
+      app
+        .get('/headers')
+        .input({ headers: z.object({ 'x-custom-header': z.string() }) })
+        .handle((c) => c.json({ header: c.input.headers['x-custom-header'] })),
+      app
+        .get('/cookies')
+        .input({ cookie: z.object({ 'session-id': z.string() }) })
+        .handle((c) => c.json({ cookie: c.input.cookie['session-id'] })),
+    ]);
+    const caller = createCaller(routes, { baseUrl: 'http://localhost' });
+
+    it('should send headers', async () => {
+      const { data, error } = await caller.headers.$get({
+        headers: { 'x-custom-header': 'test-value' },
+      });
+      expect(error).toBeUndefined();
+      expect(data).toEqual({ header: 'test-value' });
+    });
+
+    it('should send cookies', async () => {
+      const { data, error } = await caller.cookies.$get({
+        cookie: { 'session-id': 'abc-123' },
+      });
+      expect(error).toBeUndefined();
+      expect(data).toEqual({ cookie: 'abc-123' });
+    });
+  });
+
   describe('combined input', () => {
     const app = createApp();
     const routes = createRouter([

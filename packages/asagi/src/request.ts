@@ -1,3 +1,4 @@
+import { serialize } from 'cookie';
 import type { InputBase } from './types';
 
 export function buildTemplatePath(segments: string[]): string {
@@ -32,6 +33,36 @@ export function buildQueryString(query?: Record<string, unknown>): string {
   }
   const qs = params.toString();
   return qs ? `?${qs}` : '';
+}
+
+export function buildHeaders(headers: Headers, input: InputBase | undefined): void {
+  if (!input) return;
+
+  if (input.headers) {
+    for (const [key, value] of Object.entries(input.headers)) {
+      if (value !== undefined && value !== null) {
+        headers.set(key, String(value));
+      }
+    }
+  }
+
+  if (input.cookie) {
+    const cookies: string[] = [];
+    for (const [key, value] of Object.entries(input.cookie)) {
+      if (value !== undefined && value !== null) {
+        cookies.push(serialize(key, String(value)));
+      }
+    }
+
+    if (cookies.length > 0) {
+      const existing = headers.get('cookie');
+      if (existing) {
+        headers.set('cookie', `${existing}; ${cookies.join('; ')}`);
+      } else {
+        headers.set('cookie', cookies.join('; '));
+      }
+    }
+  }
 }
 
 export function buildBody(
