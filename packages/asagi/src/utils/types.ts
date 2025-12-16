@@ -20,6 +20,8 @@ export type MergeUnion<U> = UnionToIntersection<U> extends infer O ? { [K in key
 
 export type EmptyToNever<T> = keyof T extends never ? Record<string, never> : T;
 
+export type FormValue = string | File | (string | File)[];
+
 /*
  * The following code is copied from Hono.
  * https://github.com/honojs/hono/blob/main/src/utils/types.ts

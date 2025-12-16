@@ -9,6 +9,12 @@ type OutputBuilder<Type extends OutputType> = {
   <T extends OutputTypeMap[Type]>(body: T, init?: Omit<ResponseInit, 'status'>): TypedOutput<Type, T, 200>;
 };
 
+type RedirectBuilder = {
+  <S extends number>(path: string, init: S): TypedOutput<'redirect', never, S>;
+  <S extends number>(path: string, init: ResponseInit & { status: S }): TypedOutput<'redirect', never, S>;
+  (path: string, init?: Omit<ResponseInit, 'status'>): TypedOutput<'redirect', never, 302>;
+};
+
 export class Context<Var extends object, Params extends Record<string, string>, Input extends InputSchemas> {
   readonly req: Request;
   readonly params: Params;
@@ -43,7 +49,23 @@ export class Context<Var extends object, Params extends Record<string, string>, 
     };
   };
 
-  json = this.createOutputBuilder('json');
-  text = this.createOutputBuilder('text');
   body = this.createOutputBuilder('body');
+  text = this.createOutputBuilder('text');
+  json = this.createOutputBuilder('json');
+  form = this.createOutputBuilder('form');
+
+  redirect: RedirectBuilder = (path: string, init?: ResponseInit | number) => {
+    const status = typeof init === 'number' ? init : (init?.status ?? 302);
+    const rest = typeof init === 'number' || init === undefined ? {} : { ...init };
+    const headers = new Headers(rest.headers);
+    headers.set('location', path);
+
+    return {
+      type: 'redirect',
+      body: undefined as never,
+      status,
+      ...rest,
+      headers,
+    } as TypedOutput<'redirect', never, any>;
+  };
 }

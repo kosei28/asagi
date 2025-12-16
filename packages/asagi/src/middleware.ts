@@ -22,7 +22,7 @@ export type InferMiddlewareInput<M extends MiddlewareSource> =
 
 export type InferMiddlewareOutput<M extends MiddlewareSource> =
   M extends MiddlewareBuilder<any, any, any, infer O1>
-    ? Exclude<O1, void | undefined>
+    ? O1
     : M extends Middleware<any, any, any, infer O2>
       ? Exclude<O2, void | undefined>
       : never;

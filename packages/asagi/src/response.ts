@@ -1,10 +1,13 @@
 import type { Transformer } from './transformer';
 import type { Output, OutputType, OutputTypeMap } from './types';
+import type { FormValue } from './utils/types';
 
 const defaultContentTypes: Record<OutputType, string | undefined> = {
-  json: 'application/json',
+  body: undefined,
   text: 'text/plain; charset=utf-8',
-  body: 'application/octet-stream',
+  json: 'application/json',
+  form: undefined,
+  redirect: undefined,
 };
 
 export function ensureResponse(result: Output, transformer: Transformer): Response {
@@ -30,6 +33,25 @@ export function ensureResponse(result: Output, transformer: Transformer): Respon
   if (result.type === 'json') {
     const body = transformer.stringify(result.body);
     return new Response(body, responseInit);
+  }
+
+  if (result.type === 'form') {
+    const formData = new FormData();
+    const formBody = result.body as Record<string, FormValue>;
+    for (const [key, value] of Object.entries(formBody)) {
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          formData.append(key, item);
+        }
+      } else {
+        formData.append(key, value);
+      }
+    }
+    return new Response(formData, responseInit);
+  }
+
+  if (result.type === 'redirect') {
+    return new Response(null, responseInit);
   }
 
   return new Response(result.body as OutputTypeMap[typeof result.type], responseInit);

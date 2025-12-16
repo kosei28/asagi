@@ -1,10 +1,10 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec';
 import type { Context } from './context';
-import type { JSONValue, MaybePromise } from './utils/types';
+import type { FormValue, JSONValue, MaybePromise } from './utils/types';
 
 export type InputBase = {
   json: JSONValue;
-  form: Record<string, string | string[] | File | File[]>;
+  form: Record<string, FormValue>;
   query: Record<string, string>;
   params: Record<string, string>;
 };
@@ -41,9 +41,11 @@ export type ParsedInput<S extends InputSchemas> = {
 };
 
 export type OutputTypeMap = {
-  json: any;
-  text: string;
   body: BodyInit | null;
+  text: string;
+  json: any;
+  form: Record<string, FormValue>;
+  redirect: never;
 };
 
 export type OutputType = keyof OutputTypeMap;
@@ -56,7 +58,7 @@ export type TypedOutput<Type extends OutputType, Body, Status extends number = n
   headers?: HeadersInit;
 };
 
-export type Output = TypedOutput<OutputType, any, number> | Response | undefined;
+export type Output = TypedOutput<OutputType, any, number> | Response;
 
 export type Next = () => Promise<void>;
 
@@ -66,12 +68,12 @@ export type Middleware<
   Var extends object,
   Params extends Record<string, string>,
   Input extends InputSchemas,
-  Result extends Output | void,
+  Result extends Output | void | undefined,
 > = (context: Context<Var, Params, Input>, next: Next) => MaybePromise<Result>;
 
 export type Handler<
   Var extends object,
   Params extends Record<string, string>,
   Input extends InputSchemas,
-  Result extends Output | void,
+  Result extends Output | undefined,
 > = (context: Context<Var, Params, Input>) => MaybePromise<Result>;

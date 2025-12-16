@@ -1280,6 +1280,148 @@ describe('Context', () => {
       const res = await server.fetch(req('GET', '/test'));
       expect(res.status).toBe(202);
     });
+
+    it('should not set content-type automatically', async () => {
+      const app = createApp();
+      const routes = createRouter([app.get('/test').handle((c) => c.body('Raw body content'))]);
+      const server = createServer(routes);
+
+      const res = await server.fetch(req('GET', '/test'));
+      expect(res.headers.get('content-type')).toBeNull();
+    });
+
+    it('should allow custom content-type', async () => {
+      const app = createApp();
+      const routes = createRouter([
+        app.get('/test').handle((c) => c.body('<html></html>', { headers: { 'content-type': 'text/html' } })),
+      ]);
+      const server = createServer(routes);
+
+      const res = await server.fetch(req('GET', '/test'));
+      expect(res.headers.get('content-type')).toBe('text/html');
+    });
+  });
+
+  describe('form response', () => {
+    it('should return form-data with default 200 status', async () => {
+      const app = createApp();
+      const routes = createRouter([app.get('/test').handle((c) => c.form({ name: 'Alice', age: '30' }))]);
+      const server = createServer(routes);
+
+      const res = await server.fetch(req('GET', '/test'));
+      expect(res.status).toBe(200);
+      const formData = await res.formData();
+      expect(formData.get('name')).toBe('Alice');
+      expect(formData.get('age')).toBe('30');
+    });
+
+    it('should return form-data with File', async () => {
+      const app = createApp();
+      const file = new File(['hello'], 'hello.txt', { type: 'text/plain' });
+      const routes = createRouter([app.get('/test').handle((c) => c.form({ file }))]);
+      const server = createServer(routes);
+
+      const res = await server.fetch(req('GET', '/test'));
+      expect(res.status).toBe(200);
+      const formData = await res.formData();
+      const receivedFile = formData.get('file') as File;
+      expect(receivedFile.name).toBe('hello.txt');
+      expect(await receivedFile.text()).toBe('hello');
+    });
+
+    it('should return form-data with custom status', async () => {
+      const app = createApp();
+      const routes = createRouter([app.post('/test').handle((c) => c.form({ created: 'true' }, 201))]);
+      const server = createServer(routes);
+
+      const res = await server.fetch(req('POST', '/test'));
+      expect(res.status).toBe(201);
+    });
+
+    it('should return form-data with string array', async () => {
+      const app = createApp();
+      const routes = createRouter([app.get('/test').handle((c) => c.form({ tags: ['a', 'b', 'c'] }))]);
+      const server = createServer(routes);
+
+      const res = await server.fetch(req('GET', '/test'));
+      expect(res.status).toBe(200);
+      const formData = await res.formData();
+      expect(formData.getAll('tags')).toEqual(['a', 'b', 'c']);
+    });
+
+    it('should return form-data with File array', async () => {
+      const app = createApp();
+      const file1 = new File(['hello'], 'hello.txt', { type: 'text/plain' });
+      const file2 = new File(['world'], 'world.txt', { type: 'text/plain' });
+      const routes = createRouter([app.get('/test').handle((c) => c.form({ files: [file1, file2] }))]);
+      const server = createServer(routes);
+
+      const res = await server.fetch(req('GET', '/test'));
+      expect(res.status).toBe(200);
+      const formData = await res.formData();
+      const files = formData.getAll('files') as File[];
+      expect(files).toHaveLength(2);
+      expect((files[0] as File).name).toBe('hello.txt');
+      expect((files[1] as File).name).toBe('world.txt');
+    });
+
+    it('should return form-data with mixed types', async () => {
+      const app = createApp();
+      const routes = createRouter([
+        app.get('/mixed-form').handle((c) => {
+          const file = new File(['content'], 'test.txt');
+          return c.form({
+            string: 'text',
+            file: file,
+            mixed: ['text', file],
+          });
+        }),
+      ]);
+      const server = createServer(routes);
+
+      const res = await server.fetch(req('GET', '/mixed-form'));
+      expect(res.status).toBe(200);
+      const formData = await res.formData();
+      expect(formData.get('string')).toBe('text');
+      expect(formData.get('file')).toBeInstanceOf(File);
+      const mixed = formData.getAll('mixed');
+      expect(mixed).toHaveLength(2);
+      expect(mixed[0]).toBe('text');
+      expect(mixed[1]).toBeInstanceOf(File);
+      expect((mixed[1] as File).name).toBe('test.txt');
+    });
+  });
+
+  describe('redirect response', () => {
+    it('should return redirect with default 302 status', async () => {
+      const app = createApp();
+      const routes = createRouter([app.get('/test').handle((c) => c.redirect('/new-location'))]);
+      const server = createServer(routes);
+
+      const res = await server.fetch(req('GET', '/test'));
+      expect(res.status).toBe(302);
+      expect(res.headers.get('location')).toBe('/new-location');
+    });
+
+    it('should return redirect with custom status', async () => {
+      const app = createApp();
+      const routes = createRouter([app.get('/test').handle((c) => c.redirect('/permanent', 301))]);
+      const server = createServer(routes);
+
+      const res = await server.fetch(req('GET', '/test'));
+      expect(res.status).toBe(301);
+      expect(res.headers.get('location')).toBe('/permanent');
+    });
+
+    it('should return redirect with status in options', async () => {
+      const app = createApp();
+      const routes = createRouter([app.get('/test').handle((c) => c.redirect('/temp', { status: 307 }))]);
+      const server = createServer(routes);
+
+      const res = await server.fetch(req('GET', '/test'));
+      expect(res.status).toBe(307);
+      expect(res.headers.get('location')).toBe('/temp');
+    });
   });
 });
 

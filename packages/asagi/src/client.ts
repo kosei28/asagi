@@ -9,7 +9,7 @@ import {
   type TransformKind,
 } from './transformer';
 import type { InputBase, InputSchemas, TypedOutput } from './types';
-import type { EmptyToNever, IntRange, MergeUnion } from './utils/types';
+import type { EmptyToNever, FormValue, IntRange, MergeUnion } from './utils/types';
 
 export type Input<S extends InputSchemas> = {
   [K in keyof S as S[K] extends StandardSchemaV1<any, any> ? K : never]: S[K] extends StandardSchemaV1<infer I, any>
@@ -58,13 +58,21 @@ type ClientResult<O, Kind extends keyof TransformKind> = O extends TypedOutput<i
         ok: Status extends OkStatuses ? true : false;
         res: TypedResponse<O, Kind>;
       }
-    : {
-        data: Status extends OkStatuses ? BodyOfOutput<O> : undefined;
-        error: Status extends ErrorStatuses ? BodyOfOutput<O> : undefined;
-        status: Status;
-        ok: Status extends OkStatuses ? true : false;
-        res: TypedResponse<O, Kind>;
-      }
+    : Type extends 'redirect'
+      ? {
+          data: undefined;
+          error: undefined;
+          status: Status;
+          ok: Status extends OkStatuses ? true : false;
+          res: TypedResponse<O, Kind>;
+        }
+      : {
+          data: Status extends OkStatuses ? BodyOfOutput<O> : undefined;
+          error: Status extends ErrorStatuses ? BodyOfOutput<O> : undefined;
+          status: Status;
+          ok: Status extends OkStatuses ? true : false;
+          res: TypedResponse<O, Kind>;
+        }
   : { data: unknown; error: unknown; status: number; ok: boolean; res: Response };
 
 type RequestFn<
@@ -118,6 +126,19 @@ export type ClientOptions = {
   requestInit?: RequestInit;
 };
 
+async function parseFormData(formData: FormData): Promise<Record<string, FormValue>> {
+  const result: Record<string, FormValue> = {};
+  for (const key of new Set(formData.keys())) {
+    const values = formData.getAll(key);
+    if (values.length === 1) {
+      result[key] = values[0] as string | File;
+    } else {
+      result[key] = values as string[] | File[];
+    }
+  }
+  return result;
+}
+
 async function parseBody(response: Response, transformer: Transformer): Promise<unknown> {
   const contentType = response.headers.get('content-type') ?? '';
 
@@ -127,6 +148,10 @@ async function parseBody(response: Response, transformer: Transformer): Promise<
 
   if (contentType.startsWith('text/')) {
     return response.text();
+  }
+
+  if (contentType.includes('multipart/form-data')) {
+    return parseFormData(await response.formData());
   }
 
   return undefined;
@@ -171,6 +196,7 @@ function createNode(state: NodeState): any {
           const wrapped: any = Object.create(response, {
             status: { get: () => response.status },
             ok: { get: () => response.ok },
+            headers: { get: () => response.headers },
             json: { value: async () => state.transformer.parse(await response.clone().text()) },
             text: { value: () => response.text() },
           });

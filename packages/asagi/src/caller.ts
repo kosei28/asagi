@@ -16,14 +16,22 @@ import type { InputBase, TypedOutput } from './types';
 import type { EmptyToNever, MergeUnion } from './utils/types';
 
 type CallerResult<O> =
-  O extends TypedOutput<any, any, infer Status>
-    ? {
-        data: Status extends OkStatuses ? BodyOfOutput<O> : undefined;
-        error: Status extends ErrorStatuses ? BodyOfOutput<O> : undefined;
-        status: Status;
-        ok: Status extends OkStatuses ? true : false;
-        res: TypedResponse<O, 'json'>;
-      }
+  O extends TypedOutput<infer Type, any, infer Status>
+    ? Type extends 'redirect'
+      ? {
+          data: undefined;
+          error: undefined;
+          status: Status;
+          ok: Status extends OkStatuses ? true : false;
+          res: TypedResponse<O, 'json'>;
+        }
+      : {
+          data: Status extends OkStatuses ? BodyOfOutput<O> : undefined;
+          error: Status extends ErrorStatuses ? BodyOfOutput<O> : undefined;
+          status: Status;
+          ok: Status extends OkStatuses ? true : false;
+          res: TypedResponse<O, 'json'>;
+        }
     : { data: undefined; error: undefined; status: number; ok: boolean; res: Response };
 
 type RequestFn<R extends BuiltRoute<any, any, any, any, any, any>> =
@@ -123,6 +131,16 @@ function createNode(state: NodeState): any {
 
           const ok = output.status >= 200 && output.status < 300;
           const isError = output.status >= 400 && output.status < 600;
+
+          if (output.type === 'redirect') {
+            return {
+              data: undefined,
+              error: undefined,
+              status: output.status,
+              ok,
+              res: response,
+            };
+          }
 
           return {
             data: ok ? output.body : undefined,

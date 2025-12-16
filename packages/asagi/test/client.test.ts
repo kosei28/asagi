@@ -265,6 +265,41 @@ describe('createClient', () => {
         types: ['text/plain', 'text/plain'],
       });
     });
+
+    it('should handle form data with mixed string and File', async () => {
+      const mixedApp = createApp();
+      const mixedRoutes = createRouter([
+        mixedApp
+          .post('/mixed')
+          .input({
+            form: z.object({
+              items: z.array(z.union([z.string(), z.file()])),
+            }),
+          })
+          .handle((c) =>
+            c.json({
+              items: c.input.form.items.map((i) => (typeof i === 'string' ? i : i.name)),
+            })
+          ),
+      ]);
+      const mixedServer = createServer(mixedRoutes);
+
+      const mixedClient = createClient<typeof mixedRoutes>({
+        baseUrl: 'http://localhost',
+        fetch: createTestFetch(mixedServer),
+      });
+      const file = new File(['mixed'], 'mixed.txt', { type: 'text/plain' });
+      const { data, error } = await mixedClient.mixed.$post({
+        form: {
+          items: ['string-item', file],
+        },
+      });
+
+      expect(error).toBeUndefined();
+      expect(data).toEqual({
+        items: ['string-item', 'mixed.txt'],
+      });
+    });
   });
 
   describe('combined input', () => {
@@ -849,6 +884,156 @@ describe('createClient', () => {
           throw new Error(`Unexpected status`);
         }
       }
+    });
+  });
+
+  describe('form response', () => {
+    it('should parse form-data response and set data', async () => {
+      const app = createApp();
+      const routes = createRouter([app.get('/form').handle((c) => c.form({ name: 'Alice', age: '30' }))]);
+      const server = createServer(routes);
+
+      const client = createClient<typeof routes>({
+        baseUrl: 'http://localhost',
+        fetch: createTestFetch(server),
+      });
+
+      const { data, error, status, ok } = await client.form.$get();
+      expect(status).toBe(200);
+      expect(ok).toBe(true);
+      expect(error).toBeUndefined();
+      expect(data).toEqual({ name: 'Alice', age: '30' });
+      expectTypeOf(data).toEqualTypeOf<{ name: string; age: string }>();
+    });
+
+    it('should parse form-data response with File', async () => {
+      const app = createApp();
+      const file = new File(['hello'], 'hello.txt', { type: 'text/plain' });
+      const routes = createRouter([app.get('/form').handle((c) => c.form({ file }))]);
+      const server = createServer(routes);
+
+      const client = createClient<typeof routes>({
+        baseUrl: 'http://localhost',
+        fetch: createTestFetch(server),
+      });
+
+      const { data, error, status } = await client.form.$get();
+      expect(status).toBe(200);
+      expect(error).toBeUndefined();
+      expect(data).toBeDefined();
+      expect(data.file.name).toBe('hello.txt');
+      expect(await data.file.text()).toBe('hello');
+    });
+
+    it('should parse form-data response with string array', async () => {
+      const app = createApp();
+      const routes = createRouter([app.get('/form').handle((c) => c.form({ tags: ['a', 'b', 'c'] }))]);
+      const server = createServer(routes);
+
+      const client = createClient<typeof routes>({
+        baseUrl: 'http://localhost',
+        fetch: createTestFetch(server),
+      });
+
+      const { data, error, status } = await client.form.$get();
+      expect(status).toBe(200);
+      expect(error).toBeUndefined();
+      expect(data).toEqual({ tags: ['a', 'b', 'c'] });
+    });
+
+    it('should parse form-data response with File array', async () => {
+      const app = createApp();
+      const file1 = new File(['hello'], 'hello.txt', { type: 'text/plain' });
+      const file2 = new File(['world'], 'world.txt', { type: 'text/plain' });
+      const routes = createRouter([app.get('/form').handle((c) => c.form({ files: [file1, file2] }))]);
+      const server = createServer(routes);
+
+      const client = createClient<typeof routes>({
+        baseUrl: 'http://localhost',
+        fetch: createTestFetch(server),
+      });
+
+      const { data, error, status } = await client.form.$get();
+      expect(status).toBe(200);
+      expect(error).toBeUndefined();
+      expect(data).toBeDefined();
+      const files = data.files;
+      expect(files).toHaveLength(2);
+      expect(files[0]!.name).toBe('hello.txt');
+      expect(files[1]!.name).toBe('world.txt');
+    });
+
+    it('should parse form-data response with mixed types', async () => {
+      const app = createApp();
+      const routes = createRouter([
+        app.get('/form').handle((c) => {
+          const file = new File(['mixed'], 'mixed.txt', { type: 'text/plain' });
+          return c.form({
+            string: 'text',
+            file: file,
+            mixed: ['text', file],
+          });
+        }),
+      ]);
+      const server = createServer(routes);
+
+      const client = createClient<typeof routes>({
+        baseUrl: 'http://localhost',
+        fetch: createTestFetch(server),
+      });
+
+      const { data, error, status } = await client.form.$get();
+      expect(status).toBe(200);
+      expect(error).toBeUndefined();
+      expect(data).toBeDefined();
+      expect(data.string).toBe('text');
+      const receivedFile = data.file;
+      expect(receivedFile.name).toBe('mixed.txt');
+
+      const mixed = data.mixed;
+      expectTypeOf(mixed).toEqualTypeOf<(string | File)[]>();
+      expect(mixed).toHaveLength(2);
+      expect(mixed[0]).toBe('text');
+      expect((mixed[1] as File).name).toBe('mixed.txt');
+    });
+  });
+
+  describe('redirect response', () => {
+    it('should have undefined data and error for redirect', async () => {
+      const app = createApp();
+      const routes = createRouter([app.get('/redirect').handle((c) => c.redirect('/new-location'))]);
+      const server = createServer(routes);
+
+      const client = createClient<typeof routes>({
+        baseUrl: 'http://localhost',
+        fetch: createTestFetch(server),
+      });
+
+      const { data, error, status, ok, res } = await client.redirect.$get();
+      expect(status).toBe(302);
+      expect(ok).toBe(false);
+      expect(data).toBeUndefined();
+      expect(error).toBeUndefined();
+      expect(res.headers.get('location')).toBe('/new-location');
+      expectTypeOf(data).toEqualTypeOf<undefined>();
+      expectTypeOf(error).toEqualTypeOf<undefined>();
+    });
+
+    it('should handle redirect with custom status', async () => {
+      const app = createApp();
+      const routes = createRouter([app.get('/redirect').handle((c) => c.redirect('/permanent', 301))]);
+      const server = createServer(routes);
+
+      const client = createClient<typeof routes>({
+        baseUrl: 'http://localhost',
+        fetch: createTestFetch(server),
+      });
+
+      const { data, error, status, res } = await client.redirect.$get();
+      expect(status).toBe(301);
+      expect(data).toBeUndefined();
+      expect(error).toBeUndefined();
+      expect(res.headers.get('location')).toBe('/permanent');
     });
   });
 });

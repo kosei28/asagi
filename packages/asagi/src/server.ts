@@ -11,7 +11,7 @@ export async function runChain(
   transformer: Transformer
 ): Promise<{ output?: Output; response: Response }> {
   const context = new Context(baseContext.req, baseContext.params, baseContext.var, {});
-  let output: Output;
+  let output: Output | undefined;
 
   async function invoke(index: number): Promise<void> {
     const current = stack[index];
@@ -38,7 +38,7 @@ export async function runChain(
   }
 
   return {
-    output: output,
+    output,
     response: context.res,
   };
 }

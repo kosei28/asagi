@@ -670,4 +670,60 @@ describe('createCaller', () => {
       expect(data).toEqual({ auth: 'Bearer override' });
     });
   });
+
+  describe('form response', () => {
+    it('should return form body as data', async () => {
+      const app = createApp();
+      const routes = createRouter([app.get('/form').handle((c) => c.form({ name: 'Alice', age: '30' }))]);
+      const caller = createCaller(routes, { baseUrl: 'http://localhost' });
+
+      const { data, error, status, ok } = await caller.form.$get();
+      expect(status).toBe(200);
+      expect(ok).toBe(true);
+      expect(error).toBeUndefined();
+      expect(data).toEqual({ name: 'Alice', age: '30' });
+      expectTypeOf(data).toEqualTypeOf<{ name: string; age: string }>();
+    });
+
+    it('should return form body with File as data', async () => {
+      const app = createApp();
+      const file = new File(['hello'], 'hello.txt', { type: 'text/plain' });
+      const routes = createRouter([app.get('/form').handle((c) => c.form({ file }))]);
+      const caller = createCaller(routes, { baseUrl: 'http://localhost' });
+
+      const { data, error, status } = await caller.form.$get();
+      expect(status).toBe(200);
+      expect(error).toBeUndefined();
+      expect(data).toEqual({ file });
+    });
+  });
+
+  describe('redirect response', () => {
+    it('should have undefined data and error for redirect', async () => {
+      const app = createApp();
+      const routes = createRouter([app.get('/redirect').handle((c) => c.redirect('/new-location'))]);
+      const caller = createCaller(routes, { baseUrl: 'http://localhost' });
+
+      const { data, error, status, ok, res } = await caller.redirect.$get();
+      expect(status).toBe(302);
+      expect(ok).toBe(false);
+      expect(data).toBeUndefined();
+      expect(error).toBeUndefined();
+      expect(res.headers.get('location')).toBe('/new-location');
+      expectTypeOf(data).toEqualTypeOf<undefined>();
+      expectTypeOf(error).toEqualTypeOf<undefined>();
+    });
+
+    it('should handle redirect with custom status', async () => {
+      const app = createApp();
+      const routes = createRouter([app.get('/redirect').handle((c) => c.redirect('/permanent', 301))]);
+      const caller = createCaller(routes, { baseUrl: 'http://localhost' });
+
+      const { data, error, status, res } = await caller.redirect.$get();
+      expect(status).toBe(301);
+      expect(data).toBeUndefined();
+      expect(error).toBeUndefined();
+      expect(res.headers.get('location')).toBe('/permanent');
+    });
+  });
 });
